@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../core/theme/app_colors.dart'; 
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -9,26 +10,22 @@ class LoginPage extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // Imagem de fundo
           SizedBox.expand(
             child: Image.asset(
               'assets/images/background.png', 
               fit: BoxFit.cover,
             ),
           ),
-          // Conteúdo da tela
           Center(
             child: SingleChildScrollView(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo
                   SvgPicture.asset(
                     'assets/icons/logo-inf.svg',
                     height: 120,
                   ),
                   const SizedBox(height: 32),
-                  // Campo Email
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
                     child: TextField(
@@ -43,7 +40,6 @@ class LoginPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Campo Senha
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
                     child: TextField(
@@ -60,19 +56,18 @@ class LoginPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Botão Acessar
                   SizedBox(
                     width: 160,
                     height: 44,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2196F3), // azul
+                        backgroundColor: AppColors.infoLight,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       onPressed: () {
-                        // ação de login
+                        // Ação ao pressionar o botão
                       },
                       child: const Text(
                         'Acessar',
