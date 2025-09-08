@@ -1,8 +1,23 @@
 import 'package:flutter/material.dart';
 import '../../../main.dart';
+import '../components/navBar.dart'; // adicione este import
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget { // troque para StatefulWidget
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+
+  void _onNavTap(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    // Aqui você pode trocar o conteúdo do body conforme o index
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,13 +36,17 @@ class HomePage extends StatelessWidget {
                 },
               ),
               Icon(Icons.dark_mode, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 12), // espaçamento final
+              const SizedBox(width: 12),
             ],
           ),
         ],
       ),
       body: const Center(
         child: Text("Use o switch no AppBar para alternar entre Light e Dark."),
+      ),
+      bottomNavigationBar: CustomNavbar(
+        currentIndex: _selectedIndex,
+        onTap: _onNavTap,
       ),
     );
   }
