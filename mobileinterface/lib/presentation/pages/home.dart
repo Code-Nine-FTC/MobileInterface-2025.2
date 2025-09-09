@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../main.dart';
-import '../components/navBar.dart'; // adicione este import
+import '../components/navBar.dart'; 
 
-class HomePage extends StatefulWidget { // troque para StatefulWidget
+class HomePage extends StatefulWidget { 
   const HomePage({super.key});
 
   @override
