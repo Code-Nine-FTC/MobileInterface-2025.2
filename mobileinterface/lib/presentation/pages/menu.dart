@@ -43,7 +43,9 @@ Widget build(BuildContext context) {
         _buildCard(
           icon: Icons.add_circle_outline,
           label: 'Cadastrar',
-          onTap: () {},
+          onTap: () {
+            Navigator.pushNamed(context, '/registration');
+          },
         ),
         _buildCard(
           icon: Icons.list_alt,
