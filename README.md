@@ -1,1 +1,3 @@
-# MobileInterface-2025.2
+# mobileinterface
+
+A new Flutter project.
