@@ -3,6 +3,7 @@ import 'presentation/pages/loginPage.dart';
 import 'presentation/pages/home.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/pages/menu.dart';
+import 'presentation/pages/registrationPage.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
           '/': (context) => const LoginPage(),
           '/home': (context) => const HomePage(),
           '/menu': (context) => const MenuPage(),
+          '/registration': (context) => const RegistrationPage(),
         },
       ),
     );
