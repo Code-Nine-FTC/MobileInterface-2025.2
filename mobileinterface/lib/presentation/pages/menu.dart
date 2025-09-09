@@ -30,51 +30,40 @@ class _MenuPageState extends State<MenuPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return StandardScreen(
-      title: 'Menu',
-      bottomNavigationBar: CustomNavbar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTap,
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 22),
-          
-          const SizedBox(height: 16),
-          _buildCard(
-            icon: Icons.add_circle_outline,
-            label: 'Cadastrar',
-            onTap: () {
-              // ação ou navegação
-            },
-          ),
-          _buildCard(
-            icon: Icons.list_alt,
-            label: 'Pedidos',
-            onTap: () {
-              // ação ou navegação
-            },
-          ),
-          _buildCard(
-            icon: Icons.inventory_2,
-            label: 'Estoque',
-            onTap: () {
-              // ação ou navegação
-            },
-          ),
-          _buildCard(
-            icon: Icons.groups,
-            label: 'Gestão de usuários',
-            onTap: () {
-              // ação ou navegação
-            },
-          ),
-        ],
-      ),
-    );
-  }
+@override
+Widget build(BuildContext context) {
+  return StandardScreen(
+    title: 'Menu',
+    bottomNavigationBar: CustomNavbar(
+      currentIndex: _selectedIndex,
+      onTap: _onNavTap,
+    ),
+    child: Column(
+      children: [
+        _buildCard(
+          icon: Icons.add_circle_outline,
+          label: 'Cadastrar',
+          onTap: () {},
+        ),
+        _buildCard(
+          icon: Icons.list_alt,
+          label: 'Pedidos',
+          onTap: () {},
+        ),
+        _buildCard(
+          icon: Icons.inventory_2,
+          label: 'Estoque',
+          onTap: () {},
+        ),
+        _buildCard(
+          icon: Icons.groups,
+          label: 'Gestão de usuários',
+          onTap: () {},
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildCard({
     required IconData icon,
