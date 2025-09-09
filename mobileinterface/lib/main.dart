@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mobileinterface/presentation/pages/loginPage.dart';
+import 'presentation/pages/loginPage.dart';
+import 'presentation/pages/home.dart';
 import 'core/theme/app_theme.dart';
-
+import 'presentation/pages/menu.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -22,7 +23,12 @@ class MyApp extends StatelessWidget {
         darkTheme: AppTheme.dark,
         debugShowCheckedModeBanner: false,
         themeMode: mode,
-        home: const LoginPage(),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const LoginPage(),
+          '/home': (context) => const HomePage(),
+          '/menu': (context) => const MenuPage(),
+        },
       ),
     );
   }

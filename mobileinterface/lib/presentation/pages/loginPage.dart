@@ -67,7 +67,7 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
-                        // Ação ao pressionar o botão
+                        Navigator.pushReplacementNamed(context, '/menu');
                       },
                       child: const Text(
                         'Acessar',

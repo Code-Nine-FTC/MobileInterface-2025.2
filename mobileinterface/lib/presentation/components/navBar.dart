@@ -17,8 +17,8 @@ class CustomNavbar extends StatelessWidget {
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.secondaryLight, // azul escuro embaixo
-            AppColors.infoLight,      // azul claro em cima
+            AppColors.secondaryLight,
+            AppColors.infoLight,      
           ],
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
@@ -29,7 +29,20 @@ class CustomNavbar extends StatelessWidget {
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white70,
         currentIndex: currentIndex,
-        onTap: onTap,
+        onTap: (index) {
+          onTap(index); // atualiza o estado
+          switch (index) {
+            case 0:
+              Navigator.pushReplacementNamed(context, '/cards');
+              break;
+            case 1:
+              Navigator.pushReplacementNamed(context, '/home');
+              break;
+            case 2:
+              Navigator.pushReplacementNamed(context, '/perfil');
+              break;
+          }
+        },
         iconSize: 32,
         items: const [
           BottomNavigationBarItem(
