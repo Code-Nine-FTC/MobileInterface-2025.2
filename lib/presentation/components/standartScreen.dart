@@ -6,12 +6,14 @@ class StandardScreen extends StatelessWidget {
   final Widget child;
   final Widget? bottomNavigationBar;
   final String? title;
+  final bool showBackButton;
 
   const StandardScreen({
     super.key,
     required this.child,
     this.bottomNavigationBar,
     this.title,
+    this.showBackButton = true,
   });
 
   @override
@@ -38,24 +40,45 @@ class StandardScreen extends StatelessWidget {
                     bottomRight: Radius.circular(40),
                   ),
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Stack(
                   children: [
-                    SvgPicture.asset(
-                      'assets/icons/logo-inf.svg',
-                      height: 80,
-                    ),
-                    if (title != null) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        title!,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                    // Botão de voltar condicional
+                    if (showBackButton)
+                      Positioned(
+                        top: 32,
+                        left: 16,
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                          onPressed: () {
+                            Navigator.of(context).maybePop();
+                          },
+                          tooltip: 'Voltar',
                         ),
                       ),
-                    ],
+                    // Logo e título centralizados
+                    Align(
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icons/logo-inf.svg',
+                            height: 80,
+                          ),
+                          if (title != null) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              title!,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

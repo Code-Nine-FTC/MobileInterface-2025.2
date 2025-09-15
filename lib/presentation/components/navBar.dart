@@ -30,13 +30,10 @@ class CustomNavbar extends StatelessWidget {
         unselectedItemColor: Colors.white70,
         currentIndex: currentIndex,
         onTap: (index) {
-          onTap(index); // atualiza o estado
+          onTap(index);
           switch (index) {
             case 0:
-              Navigator.pushReplacementNamed(context, '/cards');
-              break;
-            case 1:
-              Navigator.pushReplacementNamed(context, '/home');
+              Navigator.pushReplacementNamed(context, '/menu');
               break;
             case 2:
               Navigator.pushReplacementNamed(context, '/perfil');
@@ -47,11 +44,7 @@ class CustomNavbar extends StatelessWidget {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
-            label: 'Cards',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
+            label: 'Menu',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
