@@ -34,6 +34,7 @@ class _MenuPageState extends State<MenuPage> {
 Widget build(BuildContext context) {
   return StandardScreen(
     title: 'Menu',
+    showBackButton: false,
     bottomNavigationBar: CustomNavbar(
       currentIndex: _selectedIndex,
       onTap: _onNavTap,
@@ -50,17 +51,23 @@ Widget build(BuildContext context) {
         _buildCard(
           icon: Icons.list_alt,
           label: 'Pedidos',
-          onTap: () {},
+          onTap: () {
+            Navigator.pushNamed(context, '/order_management');
+          },
         ),
         _buildCard(
           icon: Icons.inventory_2,
           label: 'Estoque',
-          onTap: () {},
+          onTap: () {
+            Navigator.pushNamed(context, '/stock');
+          },
         ),
         _buildCard(
           icon: Icons.groups,
           label: 'Gestão de usuários',
-          onTap: () {},
+          onTap: () {
+            Navigator.pushNamed(context, '/user_management');
+          },
         ),
       ],
     ),
