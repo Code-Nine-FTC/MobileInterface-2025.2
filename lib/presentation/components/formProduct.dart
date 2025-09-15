@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-class ProductForm extends StatelessWidget {
+
+class ProductForm extends StatefulWidget {
   final GlobalKey<FormState> formKey;
   final void Function()? onSubmit;
   final List<String> requiredFields;
@@ -12,11 +13,19 @@ class ProductForm extends StatelessWidget {
     this.requiredFields = const [],
   });
 
+  @override
+  State<ProductForm> createState() => _ProductFormState();
+}
+
+class _ProductFormState extends State<ProductForm> {
+  bool validadeEnabled = false;
+
 
   Widget _buildInput(
     String label, {
     TextInputType keyboardType = TextInputType.text,
-    List<String>? options, 
+    List<String>? options,
+    bool enabled = true,
   }) {
     if (options != null && options.isNotEmpty) {
       String? selectedValue;
@@ -36,11 +45,9 @@ class ProductForm extends StatelessWidget {
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
           value: selectedValue,
-          onChanged: (value) {
-            selectedValue = value;
-          },
+          onChanged: enabled ? (value) { selectedValue = value; } : null,
           validator: (value) {
-            if (requiredFields.contains(label) && (value == null || value.isEmpty)) {
+            if (widget.requiredFields.contains(label) && (value == null || value.isEmpty)) {
               return "Selecione o campo $label";
             }
             return null;
@@ -52,6 +59,7 @@ class ProductForm extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: TextFormField(
           keyboardType: keyboardType,
+          enabled: enabled,
           decoration: InputDecoration(
             labelText: label,
             border: OutlineInputBorder(
@@ -61,7 +69,7 @@ class ProductForm extends StatelessWidget {
             fillColor: Colors.white,
           ),
           validator: (value) {
-            if (requiredFields.contains(label) && (value == null || value.isEmpty)) {
+            if (widget.requiredFields.contains(label) && (value == null || value.isEmpty)) {
               return "Preencha o campo $label";
             }
             return null;
@@ -87,26 +95,45 @@ class ProductForm extends StatelessWidget {
         ],
       ),
       child: Form(
-        key: formKey,
+        key: widget.formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildInput("Nome"),
-            _buildInput("Número da ficha"),
-            _buildInput("Descrição"),
             _buildInput("Quantidade", keyboardType: TextInputType.number),
             _buildInput(
               "Unidade de Medida",
               options: ["kg", "g", "l", "ml", "unidade"],
             ),
             _buildInput("Estoque mínimo", keyboardType: TextInputType.number),
-            _buildInput("Validade"),
-            _buildInput("Origem"),
-            _buildInput("Fornecedor"),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    "Possui validade?",
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+                Switch(
+                  value: validadeEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      validadeEnabled = value;
+                    });
+                  },
+                ),
+              ],
+            ),
+            _buildInput(
+              "Validade",
+              keyboardType: TextInputType.datetime,
+              enabled: validadeEnabled,
+            ),
+            _buildInput("Fornecedor", options: ["Fornecedor A", "Fornecedor B", "Fornecedor C"]),
             _buildInput("Data do cadastro"),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: onSubmit,
+              onPressed: widget.onSubmit,
               child: const Text("Cadastrar"),
             ),
           ],
