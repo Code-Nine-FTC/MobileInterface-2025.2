@@ -39,7 +39,7 @@ class MyApp extends StatelessWidget {
             case '/menu':
               builder = (context) => const MenuPage();
               break;
-            case '/registration':
+            case '/product_register':
               builder = (context) => const RegistrationPage();
               break;
             case '/user_management':

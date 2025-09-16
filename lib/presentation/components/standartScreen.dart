@@ -42,7 +42,6 @@ class StandardScreen extends StatelessWidget {
                 ),
                 child: Stack(
                   children: [
-                    // Botão de voltar condicional
                     if (showBackButton)
                       Positioned(
                         top: 32,
