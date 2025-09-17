@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../../core/theme/app_colors.dart';
 
 class ProductForm extends StatefulWidget {
   final GlobalKey<FormState> formKey;
@@ -20,7 +20,6 @@ class ProductForm extends StatefulWidget {
 class _ProductFormState extends State<ProductForm> {
   bool validadeEnabled = false;
 
-
   Widget _buildInput(
     String label, {
     TextInputType keyboardType = TextInputType.text,
@@ -35,9 +34,7 @@ class _ProductFormState extends State<ProductForm> {
         child: DropdownButtonFormField<String>(
           decoration: InputDecoration(
             labelText: label,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
             fillColor: Colors.white,
           ),
@@ -45,9 +42,14 @@ class _ProductFormState extends State<ProductForm> {
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
           value: selectedValue,
-          onChanged: enabled ? (value) { selectedValue = value; } : null,
+          onChanged: enabled
+              ? (value) {
+                  selectedValue = value;
+                }
+              : null,
           validator: (value) {
-            if (widget.requiredFields.contains(label) && (value == null || value.isEmpty)) {
+            if (widget.requiredFields.contains(label) &&
+                (value == null || value.isEmpty)) {
               return "Selecione o campo $label";
             }
             return null;
@@ -62,14 +64,13 @@ class _ProductFormState extends State<ProductForm> {
           enabled: enabled,
           decoration: InputDecoration(
             labelText: label,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
             fillColor: Colors.white,
           ),
           validator: (value) {
-            if (widget.requiredFields.contains(label) && (value == null || value.isEmpty)) {
+            if (widget.requiredFields.contains(label) &&
+                (value == null || value.isEmpty)) {
               return "Preencha o campo $label";
             }
             return null;
@@ -87,11 +88,7 @@ class _ProductFormState extends State<ProductForm> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
         ],
       ),
       child: Form(
@@ -129,7 +126,19 @@ class _ProductFormState extends State<ProductForm> {
               keyboardType: TextInputType.datetime,
               enabled: validadeEnabled,
             ),
-            _buildInput("Fornecedor", options: ["Fornecedor A", "Fornecedor B", "Fornecedor C"]),
+            _buildInput(
+              "Fornecedor",
+              options: ["Fornecedor A", "Fornecedor B", "Fornecedor C"],
+            ),
+              ElevatedButton.icon(
+              icon: const Icon(Icons.person_add),
+              label: const Text("Cadastrar novo fornecedor"),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.infoLight),
+              onPressed: () {
+                Navigator.of(context).pushNamed('/supplier_register');
+              },
+            ),
+            const SizedBox(height: 12),
             _buildInput("Data do cadastro"),
             const SizedBox(height: 20),
             ElevatedButton(
