@@ -142,8 +142,15 @@ class _ProductFormState extends State<ProductForm> {
             _buildInput("Data do cadastro"),
             const SizedBox(height: 20),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.infoLight,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: widget.onSubmit,
-              child: const Text("Cadastrar"),
+              child: const Text("Cadastrar")
             ),
           ],
         ),
