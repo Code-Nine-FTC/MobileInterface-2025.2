@@ -9,6 +9,7 @@ import 'presentation/pages/assistants_list_page.dart';
 import 'presentation/pages/managers_list_page.dart';
 import 'presentation/pages/stock_list_page.dart';
 import 'presentation/pages/user_register_page.dart';
+import 'presentation/pages/registration_supplier_page.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -59,6 +60,9 @@ class MyApp extends StatelessWidget {
               break;
             case '/user_register':
               builder = (context) => UserRegisterPage();
+              break;
+            case '/supplier_register':
+              builder = (context) => const RegistrationSupplierPage();
               break;
             default:
               builder = (context) => const MenuPage();
