@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../components/formSupplier.dart';
-import '../components/standartScreen.dart';
-import '../components/navBar.dart';
+import '../../components/formSupplier.dart';
+import '../../components/standartScreen.dart';
+import '../../components/navBar.dart';
 
 class RegistrationSupplierPage extends StatefulWidget {
   const RegistrationSupplierPage({super.key});

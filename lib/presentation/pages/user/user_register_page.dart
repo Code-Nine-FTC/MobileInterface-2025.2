@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../components/standartScreen.dart';
-import '../components/user_form.dart';
+import '../../components/standartScreen.dart';
+import '../../components/user_form.dart';
 
 class UserRegisterPage extends StatelessWidget {
   UserRegisterPage({super.key});

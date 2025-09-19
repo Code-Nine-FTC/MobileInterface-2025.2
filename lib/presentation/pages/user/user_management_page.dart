@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../components/standartScreen.dart';
-import '../components/navBar.dart';
-import '../../core/theme/app_colors.dart';
+import '../../components/standartScreen.dart';
+import '../../components/navBar.dart';
+import '../../../core/theme/app_colors.dart';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});

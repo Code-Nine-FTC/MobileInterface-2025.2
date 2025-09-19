@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_colors.dart';
-import '../components/navBar.dart';
-import '../components/standartScreen.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../components/navBar.dart';
+import '../../components/standartScreen.dart';
 
-class AssistantsListPage extends StatefulWidget {
-  const AssistantsListPage({super.key});
+class ManagersListPage extends StatefulWidget {
+  const ManagersListPage({super.key});
 
   @override
-  State<AssistantsListPage> createState() => _AssistantsListPageState();
+  State<ManagersListPage> createState() => _ManagersListPageState();
 }
 
-class _AssistantsListPageState extends State<AssistantsListPage> {
+class _ManagersListPageState extends State<ManagersListPage> {
   int _selectedIndex = 0;
 
   void _onNavTap(int index) {
@@ -21,6 +21,9 @@ class _AssistantsListPageState extends State<AssistantsListPage> {
       case 0:
         Navigator.pushReplacementNamed(context, '/menu');
         break;
+      case 1:
+        Navigator.pushReplacementNamed(context, '/home');
+        break;
       case 2:
         Navigator.pushReplacementNamed(context, '/perfil');
         break;
@@ -29,14 +32,14 @@ class _AssistantsListPageState extends State<AssistantsListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final auxiliares = List.generate(5, (i) => 'Auxiliar ${i + 1}');
+    final gestores = List.generate(5, (i) => 'Gestor ${i + 1}');
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
             Navigator.pushNamed(context, '/user_register');
         },
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Novo Auxiliar', style: TextStyle(color: Colors.white)),
+        label: const Text('Novo Gestor', style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.infoLight,
       ),
       backgroundColor: Colors.transparent,
@@ -45,7 +48,7 @@ class _AssistantsListPageState extends State<AssistantsListPage> {
         onTap: _onNavTap,
       ),
       body: StandardScreen(
-        title: 'Auxiliares',
+        title: 'Gestores',
         child: SingleChildScrollView(
           child: Column(
             children: [
@@ -71,9 +74,9 @@ class _AssistantsListPageState extends State<AssistantsListPage> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                itemCount: auxiliares.length,
+                itemCount: gestores.length,
                 itemBuilder: (context, index) {
-                  final aux = auxiliares[index];
+                  final gestor = gestores[index];
                   return Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -82,8 +85,8 @@ class _AssistantsListPageState extends State<AssistantsListPage> {
                     child: SizedBox(
                       height: 100,
                       child: ListTile(
-                        title: Text(aux),
-                        trailing: Icon(Icons.badge, color: AppColors.infoLight, size: 32),
+                        title: Text(gestor),
+                        trailing: Icon(Icons.person, color: AppColors.infoLight, size: 32),
                         onTap: () {},
                       ),
                     ),

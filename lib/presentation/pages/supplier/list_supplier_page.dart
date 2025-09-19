@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_colors.dart';
-import '../components/navBar.dart';
-import '../components/standartScreen.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../components/navBar.dart';
+import '../../components/standartScreen.dart';
 
-class StockListPage extends StatefulWidget {
-  const StockListPage({super.key});
+class ListSupplierPage extends StatefulWidget {
+  const ListSupplierPage({super.key});
 
   @override
-  State<StockListPage> createState() => _StockListPageState();
+  State<ListSupplierPage> createState() => _ListSupplierPage();
 }
 
-class _StockListPageState extends State<StockListPage> {
+class _ListSupplierPage extends State<ListSupplierPage> {
   int _selectedIndex = 0;
 
   void _onNavTap(int index) {
@@ -29,7 +29,7 @@ class _StockListPageState extends State<StockListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final estoque = List.generate(5, (i) => 'Produto ${i + 1}');
+    final estoque = List.generate(5, (i) => 'Fornecedor: ${i + 1}');
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -37,7 +37,7 @@ class _StockListPageState extends State<StockListPage> {
           Navigator.pushNamed(context, '/product_register');
         },
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Novo Produto', style: TextStyle(color: Colors.white)),
+        label: const Text('Novo Fornecedor', style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.infoLight,
       ),
       backgroundColor: Colors.transparent,
@@ -46,7 +46,7 @@ class _StockListPageState extends State<StockListPage> {
         onTap: _onNavTap,
       ),
       body: StandardScreen(
-        title: 'Estoque',
+        title: 'Fornecedores',
         child: SingleChildScrollView(
           child: Column(
             children: [
@@ -84,7 +84,7 @@ class _StockListPageState extends State<StockListPage> {
                       height: 100,
                       child: ListTile(
                         title: Text(produto),
-                        trailing: Icon(Icons.inventory_2, color: AppColors.infoLight, size: 32),
+                        trailing: Icon(Icons.local_shipping, color: AppColors.infoLight, size: 32),
                         onTap: () {},
                       ),
                     ),
