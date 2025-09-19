@@ -69,6 +69,13 @@ Widget build(BuildContext context) {
             Navigator.pushNamed(context, '/user_management');
           },
         ),
+        _buildCard(
+          icon: Icons.local_shipping,
+          label: 'Fornecedores',
+          onTap: () {
+            Navigator.pushNamed(context, '/supplier_management');
+          },
+        ),
       ],
     ),
   );
