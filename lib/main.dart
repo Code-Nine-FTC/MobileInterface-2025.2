@@ -10,6 +10,7 @@ import 'presentation/pages/user/managers_list_page.dart';
 import 'presentation/pages/stock/stock_list_page.dart';
 import 'presentation/pages/user/user_register_page.dart';
 import 'presentation/pages/supplier/registration_supplier_page.dart';
+import 'presentation/pages/supplier/list_supplier_page.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -64,8 +65,12 @@ class MyApp extends StatelessWidget {
             case '/supplier_register':
               builder = (context) => const RegistrationSupplierPage();
               break;
+            case '/supplier_management':
+              builder = (context) => const ListSupplierPage();  
+              break;
             default:
               builder = (context) => const MenuPage();
+            
           }
           return PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) => builder(context),
@@ -91,6 +96,8 @@ class MyApp extends StatelessWidget {
           '/managers': (context) => const ManagersListPage(),
           '/stock': (context) => const StockListPage(),
           '/user_register': (context) => UserRegisterPage(),
+          '/supplier_register': (context) => const RegistrationSupplierPage(),
+          '/supplier_management': (context) => const ListSupplierPage(),
         },
       ),
     );
