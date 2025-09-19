@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../components/formProduct.dart';
-import '../components/standartScreen.dart';
-import '../components/navBar.dart'; // se CustomNavbar estiver aqui
+import '../../components/formProduct.dart';
+import '../../components/standartScreen.dart';
+import '../../components/navBar.dart'; // se CustomNavbar estiver aqui
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});

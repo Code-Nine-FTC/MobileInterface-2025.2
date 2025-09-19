@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'presentation/pages/loginPage.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/pages/menu.dart';
-import 'presentation/pages/registrationPage.dart';
-import 'presentation/pages/user_management_page.dart';
-import 'presentation/pages/order_management_page.dart';
-import 'presentation/pages/assistants_list_page.dart';
-import 'presentation/pages/managers_list_page.dart';
-import 'presentation/pages/stock_list_page.dart';
-import 'presentation/pages/user_register_page.dart';
-import 'presentation/pages/registration_supplier_page.dart';
+import 'presentation/pages/user/registrationPage.dart';
+import 'presentation/pages/user/user_management_page.dart';
+import 'presentation/pages/order/order_management_page.dart';
+import 'presentation/pages/user/assistants_list_page.dart';
+import 'presentation/pages/user/managers_list_page.dart';
+import 'presentation/pages/stock/stock_list_page.dart';
+import 'presentation/pages/user/user_register_page.dart';
+import 'presentation/pages/supplier/registration_supplier_page.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 

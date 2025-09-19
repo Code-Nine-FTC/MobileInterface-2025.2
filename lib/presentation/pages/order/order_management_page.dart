@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_colors.dart';
-import '../components/navBar.dart';
-import '../components/standartScreen.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../components/navBar.dart';
+import '../../components/standartScreen.dart';
 
 class OrderManagementPage extends StatefulWidget {
   const OrderManagementPage({super.key});
