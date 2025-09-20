@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthApiDataSource {
   static const String _baseUrl = 'http://10.0.2.2:8080';
@@ -12,7 +14,14 @@ class AuthApiDataSource {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final data = jsonDecode(response.body);
+      final token = data['token'];
+      if (token != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', token);
+        print('[AUTH] Token salvo: $token');
+      }
+      return data;
     } else {
       throw Exception('Falha no login: ${response.body}');
     }
