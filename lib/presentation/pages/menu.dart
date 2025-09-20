@@ -48,58 +48,61 @@ Widget build(BuildContext context) {
       currentIndex: _selectedIndex,
       onTap: _onNavTap,
     ),
-    child: Column(
-      children: [
-        _buildCard(
-          icon: Icons.add_circle_outline,
-          label: 'Cadastrar',
-          onTap: () {
-            Navigator.pushNamed(context, '/registration');
-          },
-        ),
-        _buildCard(
-          icon: Icons.list_alt,
-          label: 'Pedidos',
-          onTap: () {
-            Navigator.pushNamed(context, '/order_management');
-          },
-        ),
-        _buildCard(
-          icon: Icons.inventory_2,
-          label: 'Estoque',
-          onTap: () {
-            Navigator.pushNamed(context, '/stock');
-          },
-        ),
-        _buildCard(
-          icon: Icons.groups,
-          label: 'Gestão de usuários',
-          onTap: () {
-            Navigator.pushNamed(context, '/user_management');
-          },
-        ),
-        _buildCard(
-          icon: Icons.local_shipping,
-          label: 'Fornecedores',
-          onTap: () {
-            Navigator.pushNamed(context, '/supplier_management');
-          },
-        ),
-        const SizedBox(height: 24),
-        ElevatedButton.icon(
-          onPressed: _logout,
-          icon: const Icon(Icons.logout),
-          label: const Text('Logout'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.infoLight,
-            foregroundColor: Colors.white,
-            minimumSize: const Size(140, 44),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(8)),
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        children: [
+          _buildCard(
+            icon: Icons.add_circle_outline,
+            label: 'Cadastrar',
+            onTap: () {
+              Navigator.pushNamed(context, '/registration');
+            },
+          ),
+          _buildCard(
+            icon: Icons.list_alt,
+            label: 'Pedidos',
+            onTap: () {
+              Navigator.pushNamed(context, '/order_management');
+            },
+          ),
+          _buildCard(
+            icon: Icons.inventory_2,
+            label: 'Estoque',
+            onTap: () {
+              Navigator.pushNamed(context, '/stock');
+            },
+          ),
+          _buildCard(
+            icon: Icons.groups,
+            label: 'Gestão de usuários',
+            onTap: () {
+              Navigator.pushNamed(context, '/user_management');
+            },
+          ),
+          _buildCard(
+            icon: Icons.local_shipping,
+            label: 'Fornecedores',
+            onTap: () {
+              Navigator.pushNamed(context, '/supplier_management');
+            },
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout),
+            label: const Text('Logout'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.infoLight,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(140, 44),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
