@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../components/standartScreen.dart';
 import '../components/navBar.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
@@ -11,6 +12,14 @@ class MenuPage extends StatefulWidget {
 }
 
 class _MenuPageState extends State<MenuPage> {
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
   int _selectedIndex = 0;
 
   void _onNavTap(int index) {
@@ -75,6 +84,20 @@ Widget build(BuildContext context) {
           onTap: () {
             Navigator.pushNamed(context, '/supplier_management');
           },
+        ),
+        const SizedBox(height: 24),
+        ElevatedButton.icon(
+          onPressed: _logout,
+          icon: const Icon(Icons.logout),
+          label: const Text('Logout'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.infoLight,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(140, 44),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+            ),
+          ),
         ),
       ],
     ),

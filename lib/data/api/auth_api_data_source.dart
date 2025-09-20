@@ -19,6 +19,7 @@ class AuthApiDataSource {
       if (token != null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', token);
+        print('[AUTH] Token salvo: $token');
       }
       return data;
     } else {
