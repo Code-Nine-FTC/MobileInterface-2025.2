@@ -133,6 +133,7 @@ class ProductFormState extends State<ProductForm> {
       ),
       child: Form(
         key: widget.formKey,
+        child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -206,6 +207,7 @@ class ProductFormState extends State<ProductForm> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
