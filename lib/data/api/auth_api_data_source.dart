@@ -16,10 +16,17 @@ class AuthApiDataSource {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final token = data['token'];
+      final role = data['role'];
+      
       if (token != null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', token);
         print('[AUTH] Token salvo: $token');
+      }
+      if (role != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_role', role);
+        print('[AUTH] Role salvo: $role');
       }
       return data;
     } else {
