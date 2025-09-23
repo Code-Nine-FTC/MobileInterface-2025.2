@@ -181,7 +181,6 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
                   if (widget.onSubmit != null) {
                     widget.onSubmit!(supplierData);
                   }
-                  // TODO: Persistir dados via SupplierService e redirecionar para lista de fornecedores
                 }
               },
               child: const Text('Salvar'),
