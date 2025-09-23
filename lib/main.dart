@@ -8,6 +8,7 @@ import 'presentation/pages/order/order_management_page.dart';
 import 'presentation/pages/user/assistants_list_page.dart';
 import 'presentation/pages/user/managers_list_page.dart';
 import 'presentation/pages/stock/stock_list_page.dart';
+import 'presentation/pages/stock/stock_detail_page.dart';
 import 'presentation/pages/user/user_register_page.dart';
 import 'presentation/pages/supplier/registration_supplier_page.dart';
 import 'presentation/pages/supplier/list_supplier_page.dart';
@@ -58,6 +59,12 @@ class MyApp extends StatelessWidget {
               break;
             case '/stock':
               builder = (context) => const StockListPage();
+              break;
+            case '/stock_detail':
+              final args = settings.arguments as Map<String, dynamic>?;
+              final id = args?['id']?.toString();
+              final data = args?['data'] as Map<String, dynamic>?;
+              builder = (context) => StockDetailPage(itemId: id, itemData: data);
               break;
             case '/user_register':
               builder = (context) => UserRegisterPage();
