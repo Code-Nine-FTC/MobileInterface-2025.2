@@ -7,6 +7,7 @@ class StandardScreen extends StatelessWidget {
   final Widget? bottomNavigationBar;
   final String? title;
   final bool showBackButton;
+  final List<Widget>? actions;
 
   const StandardScreen({
     super.key,
@@ -14,75 +15,106 @@ class StandardScreen extends StatelessWidget {
     this.bottomNavigationBar,
     this.title,
     this.showBackButton = true,
+    this.actions,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             width: double.infinity,
-            height: 180,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.secondaryLight,
-                  AppColors.infoLight,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+            padding: const EdgeInsets.only(top: 35, bottom: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
               ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
-              ),
-            ),
-            child: Stack(
-              children: [
-                if (showBackButton)
-                  Positioned(
-                    top: 32,
-                    left: 16,
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-                      onPressed: () {
-                        Navigator.of(context).maybePop();
-                      },
-                      tooltip: 'Voltar',
-                    ),
-                  ),
-                Align(
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SvgPicture.asset(
-                        'assets/icons/logo-inf.svg',
-                        height: 80,
-                      ),
-                      if (title != null) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          title!,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (showBackButton)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          )
+                        else
+                          const SizedBox(width: 48),
+                        
+                        if (actions != null)
+                          Row(
+                            children: actions!.map((action) => 
+                              Container(
+                                margin: const EdgeInsets.only(left: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: action,
+                              ),
+                            ).toList(),
+                          )
+                        else
+                          const SizedBox(width: 48),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 6),
+                  
+                  SvgPicture.asset(
+                    'assets/icons/logo-inf.svg',
+                    height: 75,
+                  ),
+                  
+                  if (title != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      title!,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
+          
           Expanded(
             child: Container(
               width: double.infinity,
-              color: AppColors.backgroundLight,
+              color: Colors.grey[50],
               child: child,
             ),
           ),

@@ -40,62 +40,52 @@ class _RegistrationPageState extends State<RegistrationPage> {
     if (_formKey.currentState!.validate()) {
       final formState = _productFormKey.currentState;
       if (formState == null) return;
-  final values = formState.getFormValues();
+      final values = formState.getFormValues();
 
-      // Map frontend fields to backend ItemRequest DTO
-      // Mapear fornecedores para IDs (exemplo simples)
-      final supplierNameToId = {
-        "Fornecedor A": 1,
-        "Fornecedor B": 2,
-        "Fornecedor C": 3,
-      };
-      final supplierId = supplierNameToId[values["supplier"]];
-
-      // Mapear tipos de item para IDs (exemplo simples)
-      final itemTypeNameToId = {
-        "Alimento": 1,
-        "Bebida": 2,
-        "Limpeza": 3,
-      };
-      final itemTypeId = itemTypeNameToId[values["itemType"]];
-
-      // Formatar data para yyyy-MM-dd
-      String? formattedDate;
-      if (values["registrationDate"] != null && values["registrationDate"].toString().trim().isNotEmpty) {
-        try {
-          final parts = values["registrationDate"].split("/");
-          if (parts.length == 3) {
-            // Suporta formato dd/MM/yyyy
-            formattedDate = "${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}";
-          } else {
-            formattedDate = values["registrationDate"];
-          }
-        } catch (_) {
-          formattedDate = values["registrationDate"];
-        }
+      // Validações básicas
+      if (values["name"] == null || values["name"].toString().trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nome do produto é obrigatório')),
+        );
+        return;
       }
 
-      final itemRequest = {
-        "name": values["name"],
-        "quantity": int.tryParse(values["quantity"] ?? "0"),
-        "unit": values["unit"],
-        "minStock": int.tryParse(values["minStock"] ?? "0"),
-        "validity": values["hasValidity"] ? values["validity"] : null,
-        "supplierId": supplierId,
-        "itemTypeId": itemTypeId,
-        "registrationDate": formattedDate,
-      };
+      if (values["currentStock"] == null || values["currentStock"] == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Estoque atual deve ser maior que zero')),
+        );
+        return;
+      }
+
+      if (values["supplierId"] == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Selecione um fornecedor')),
+        );
+        return;
+      }
+
+      if (values["itemTypeId"] == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Selecione um tipo de item')),
+        );
+        return;
+      }
 
       try {
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('auth_token') ?? '';
+        
+        print('[RegistrationPage] Enviando dados para API: $values');
+        
         final api = ItemApiDataSource();
-        await api.createItem(itemRequest, token);
+        await api.createItem(values, token);
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Produto registrado com sucesso!')),
         );
         Navigator.pop(context);
       } catch (e) {
+        print('[RegistrationPage] Erro ao registrar produto: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erro ao registrar produto: $e')),
         );

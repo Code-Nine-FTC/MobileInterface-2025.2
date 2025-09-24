@@ -12,14 +12,22 @@ class MenuPage extends StatefulWidget {
 }
 
 class _MenuPageState extends State<MenuPage> {
+  String? _userRole;
 
-  Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
+  @override
+  void initState() {
+    super.initState();
+    _loadUserRole();
   }
+
+  Future<void> _loadUserRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userRole = prefs.getString('user_role');
+    });
+    print('[Menu] Role do usuário: $_userRole');
+  }
+
   int _selectedIndex = 0;
 
   void _onNavTap(int index) {
@@ -34,7 +42,7 @@ class _MenuPageState extends State<MenuPage> {
         Navigator.pushReplacementNamed(context, '/home');
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/perfil');
+        Navigator.pushReplacementNamed(context, '/user_profile');
         break;
     }
   }
@@ -157,78 +165,37 @@ Widget build(BuildContext context) {
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: _buildModernCard(
-                  icon: Icons.local_shipping_rounded,
-                  label: 'Fornecedores',
-                  description: 'Gestão de parceiros',
-                  color: Colors.purple,
-                  onTap: () => Navigator.pushNamed(context, '/supplier_management'),
-                ),
-              ),
+              // Só mostra Fornecedores se não for ASSISTANT
+              if (_userRole != 'ASSISTANT')
+                Expanded(
+                  child: _buildModernCard(
+                    icon: Icons.local_shipping_rounded,
+                    label: 'Fornecedores',
+                    description: 'Gestão de parceiros',
+                    color: Colors.purple,
+                    onTap: () => Navigator.pushNamed(context, '/supplier_management'),
+                  ),
+                )
+              else
+                // Card vazio para manter layout se for ASSISTANT
+                const Expanded(child: SizedBox()),
             ],
           ),
 
-          const SizedBox(height: 32),
-          _buildSectionHeader('Administração', Icons.admin_panel_settings_rounded),
-          const SizedBox(height: 16),
+          // Só mostra seção Administração se não for ASSISTANT
+          if (_userRole != 'ASSISTANT') ...[
+            const SizedBox(height: 32),
+            _buildSectionHeader('Administração', Icons.admin_panel_settings_rounded),
+            const SizedBox(height: 16),
 
-          _buildFullWidthCard(
-            icon: Icons.groups_rounded,
-            label: 'Gestão de Usuários',
-            description: 'Administrar perfis e permissões',
-            color: Colors.indigo,
-            onTap: () => Navigator.pushNamed(context, '/user_management'),
-          ),
-
-          const SizedBox(height: 32),
-
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.red.withValues(alpha: 0.3),
-                width: 2,
-              ),
+            _buildFullWidthCard(
+              icon: Icons.groups_rounded,
+              label: 'Gestão de Usuários',
+              description: 'Administrar perfis e permissões',
+              color: Colors.indigo,
+              onTap: () => Navigator.pushNamed(context, '/user_management'),
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: _logout,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.logout_rounded,
-                          color: Colors.red,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Sair da Conta',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.red,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+          ],
 
           const SizedBox(height: 32),
         ],

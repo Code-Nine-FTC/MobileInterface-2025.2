@@ -1,75 +1,75 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'base_api_service.dart';
 
 class ItemTypeApiDataSource {
-  static const String _baseUrl = 'http://10.0.2.2:8080';
+  final BaseApiService _apiService = BaseApiService();
 
   Future<List<Map<String, dynamic>>> getItemTypes({
     int? itemTypeId,
     int? sectionId,
     int? lastUserId,
-    required String token,
   }) async {
-    // Montar query parameters
-    final queryParams = <String, String>{};
-    if (itemTypeId != null) queryParams['itemTypeId'] = itemTypeId.toString();
-    if (sectionId != null) queryParams['sectionId'] = sectionId.toString();
-    if (lastUserId != null) queryParams['lastUserId'] = lastUserId.toString();
+    try {
+      // Montar query parameters
+      final queryParams = <String, String>{};
+      if (itemTypeId != null) queryParams['itemTypeId'] = itemTypeId.toString();
+      if (sectionId != null) queryParams['sectionId'] = sectionId.toString();
+      if (lastUserId != null) queryParams['lastUserId'] = lastUserId.toString();
 
-    final uri = Uri.parse('$_baseUrl/item-types').replace(queryParameters: queryParams);
+      final response = await _apiService.get(
+        '/item-types',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
 
-    final response = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer $token',
-      },
-    );
+      print('[ItemTypeApiDataSource] Status Code: ${response.statusCode}');
+      print('[ItemTypeApiDataSource] Response: ${response.data}');
 
-    print('[ItemTypeApiDataSource] URL usada: $uri');
-    print('[ItemTypeApiDataSource] Resposta: ${response.body}');
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data is List) {
-        return List<Map<String, dynamic>>.from(data);
-      } else if (data is Map && data.containsKey('content')) {
-        // Suporte para paginação Spring
-        return List<Map<String, dynamic>>.from(data['content']);
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        } else if (data is Map && data.containsKey('content')) {
+          // Suporte para paginação Spring
+          return List<Map<String, dynamic>>.from(data['content']);
+        } else {
+          throw Exception('Formato de resposta inesperado: $data');
+        }
       } else {
-        throw Exception('Formato de resposta inesperado: $data');
+        throw Exception('Falha ao buscar tipos de item: ${response.data}');
       }
-    } else {
-      throw Exception('Falha ao buscar tipos de item: ${response.body}');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw Exception('Token expirado ou inválido. Faça login novamente.');
+      } else if (e.response?.statusCode == 403) {
+        throw Exception('Acesso negado.');
+      }
+      throw Exception('Falha ao buscar tipos de item: ${e.response?.data ?? e.message}');
+    } catch (e) {
+
+      rethrow;
     }
   }
 
+  Future<Map<String, dynamic>> createItemType(Map<String, dynamic> itemType) async {
+    try {
+      final response = await _apiService.post('/item-types', data: itemType);
 
-  Future<Map<String, dynamic>> createItemType(
-      Map<String, dynamic> itemType, String token) async {
-    final jsonBody = jsonEncode(itemType);
-    print('[ItemTypeApiDataSource] Enviando JSON para backend: $jsonBody');
-    final response = await http.post(
-      Uri.parse('$_baseUrl/item-types/'),
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonBody,
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return jsonDecode(response.body);
-    } else {
-      String errorMsg = response.body;
-      try {
-        final decoded = jsonDecode(response.body);
-        if (decoded is Map && decoded.containsKey('message')) {
-          errorMsg = decoded['message'];
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return response.data;
+      } else {
+        String errorMsg = response.data?.toString() ?? 'Erro desconhecido';
+        if (response.data is Map && response.data.containsKey('message')) {
+          errorMsg = response.data['message'];
         }
-      } catch (_) {}
+        throw Exception('Falha ao criar tipo de item: $errorMsg');
+      }
+    } on DioException catch (e) {
+      String errorMsg = e.response?.data?.toString() ?? e.message ?? 'Erro desconhecido';
+      if (e.response?.data is Map && e.response!.data.containsKey('message')) {
+        errorMsg = e.response!.data['message'];
+      }
       throw Exception('Falha ao criar tipo de item: $errorMsg');
     }
   }
-
 }

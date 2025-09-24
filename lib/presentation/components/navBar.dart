@@ -35,8 +35,8 @@ class CustomNavbar extends StatelessWidget {
             case 0:
               Navigator.pushReplacementNamed(context, '/menu');
               break;
-            case 2:
-              Navigator.pushReplacementNamed(context, '/perfil');
+            case 1:
+              Navigator.pushReplacementNamed(context, '/user_profile');
               break;
           }
         },

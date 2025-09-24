@@ -12,9 +12,9 @@ import 'presentation/pages/stock/stock_detail_page.dart';
 import 'presentation/pages/user/user_register_page.dart';
 import 'presentation/pages/supplier/registration_supplier_page.dart';
 import 'presentation/pages/supplier/list_supplier_page.dart';
+import 'presentation/pages/user/user_profile.dart';
 import 'presentation/pages/adiminMenu.dart';
 import 'presentation/pages/user/select_user_menu.dart';
-
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() {
@@ -84,6 +84,9 @@ class MyApp extends StatelessWidget {
             case '/supplier_management':
               builder = (context) => const ListSupplierPage();
               break;
+            case '/user_profile':
+              builder = (context) => const UserProfile();
+              break;
             default:
               builder = (context) => const MenuPage();
           }
@@ -118,6 +121,7 @@ class MyApp extends StatelessWidget {
           '/user_register': (context) => UserRegisterPage(),
           '/supplier_register': (context) => const RegistrationSupplierPage(),
           '/supplier_management': (context) => const ListSupplierPage(),
+          '/user_profile': (context) => const UserProfile(),
         },
       ),
     );
