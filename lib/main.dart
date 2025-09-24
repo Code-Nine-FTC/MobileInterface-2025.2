@@ -12,6 +12,8 @@ import 'presentation/pages/stock/stock_detail_page.dart';
 import 'presentation/pages/user/user_register_page.dart';
 import 'presentation/pages/supplier/registration_supplier_page.dart';
 import 'presentation/pages/supplier/list_supplier_page.dart';
+import 'presentation/pages/adiminMenu.dart';
+import 'presentation/pages/user/select_user_menu.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -42,6 +44,12 @@ class MyApp extends StatelessWidget {
             case '/menu':
               builder = (context) => const MenuPage();
               break;
+            case '/admin_menu':
+              builder = (context) => const AdiminMenuPage();
+              break;
+            case '/select_user_menu':
+              builder = (context) => const SelectUserMenu();
+              break;
             case '/product_register':
               builder = (context) => const RegistrationPage();
               break;
@@ -64,7 +72,8 @@ class MyApp extends StatelessWidget {
               final args = settings.arguments as Map<String, dynamic>?;
               final id = args?['id']?.toString();
               final data = args?['data'] as Map<String, dynamic>?;
-              builder = (context) => StockDetailPage(itemId: id, itemData: data);
+              builder = (context) =>
+                  StockDetailPage(itemId: id, itemData: data);
               break;
             case '/user_register':
               builder = (context) => UserRegisterPage();
@@ -73,23 +82,27 @@ class MyApp extends StatelessWidget {
               builder = (context) => const RegistrationSupplierPage();
               break;
             case '/supplier_management':
-              builder = (context) => const ListSupplierPage();  
+              builder = (context) => const ListSupplierPage();
               break;
             default:
               builder = (context) => const MenuPage();
-            
           }
           return PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              const begin = Offset(1.0, 0.0);
-              const end = Offset.zero;
-              final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.ease));
-              return SlideTransition(
-                position: animation.drive(tween),
-                child: child,
-              );
-            },
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                builder(context),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  const begin = Offset(1.0, 0.0);
+                  const end = Offset.zero;
+                  final tween = Tween(
+                    begin: begin,
+                    end: end,
+                  ).chain(CurveTween(curve: Curves.ease));
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: child,
+                  );
+                },
             settings: settings,
           );
         },
