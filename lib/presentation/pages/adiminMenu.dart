@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import '../../components/standartScreen.dart';
-import '../../components/navBar.dart';
-import '../../../core/theme/app_colors.dart';
+import '../components/standartScreen.dart';
+import '../components/navBar.dart';
+import '../../core/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class UserManagementPage extends StatefulWidget {
-  const UserManagementPage({super.key});
+class AdiminMenuPage extends StatefulWidget {
+  const AdiminMenuPage({super.key});
 
   @override
-  State<UserManagementPage> createState() => _UserManagementPageState();
+  State<AdiminMenuPage> createState() => _AdiminMenuPageState();
 }
 
-class _UserManagementPageState extends State<UserManagementPage> {
+class _AdiminMenuPageState extends State<AdiminMenuPage> {
   int _selectedIndex = 0;
 
   void _onNavTap(int index) {
@@ -31,7 +31,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
 @override
 Widget build(BuildContext context) {
   return StandardScreen(
-    title: 'Gestão de Usuários',
+    title: 'Menu Principal',
     showBackButton: false,
     bottomNavigationBar: CustomNavbar(
       currentIndex: _selectedIndex,
@@ -44,34 +44,121 @@ Widget build(BuildContext context) {
         children: [
           Container(
             width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            margin: const EdgeInsets.only(bottom: 24),
             decoration: BoxDecoration(
-            ),         
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.infoLight.withValues(alpha: 0.8),
+                  AppColors.infoLight,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.infoLight.withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-          _buildSectionHeader('Selecione', Icons.manage_accounts_rounded),
-          const SizedBox(height: 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.dashboard_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Bem-vindo!',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        'O que você gostaria de fazer hoje?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildSectionHeader('Ações Principais', Icons.star_rounded),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: _buildModernCard(
-                  icon: Icons.inventory_2_rounded,
-                  label: 'Almoxarifado',
-                  description: 'Gerenciar usuários do almoxarifado',
+                  icon: Icons.list_alt_rounded,
+                  label: 'Pedidos',
+                  description: 'Acompanhar status',
                   color: Colors.orange,
-                  onTap: () => Navigator.pushNamed(context, '/select_user_menu'),
+                  onTap: () => Navigator.pushNamed(context, '/user_menu'),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildModernCard(
-                  icon: Icons.local_pharmacy_rounded,
-                  label: 'Farmácia',
-                  description: 'Gerenciar usuários da farmácia',
-                  color: const Color.fromARGB(255, 51, 194, 41),
-                  onTap: () => Navigator.pushNamed(context, '/select_user_menu'),
+                  icon: Icons.inventory_2_rounded,
+                  label: 'Estoque',
+                  description: 'Gerenciar produtos',
+                  color: AppColors.infoLight,
+                  onTap: () => Navigator.pushNamed(context, '/user_menu'),
                 ),
               ),
             ],
           ),
+          
+          const SizedBox(height: 12),
+          
+          Row(
+            children: [
+              const SizedBox(width: 0),
+              Expanded(
+                child: _buildModernCard(
+                  icon: Icons.local_shipping_rounded,
+                  label: 'Fornecedores',
+                  description: 'Gestão de parceiros',
+                  color: Colors.purple,
+                  onTap: () => Navigator.pushNamed(context, '/supplier_management'),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+          _buildSectionHeader('Administração', Icons.admin_panel_settings_rounded),
+          const SizedBox(height: 16),
+
+          _buildFullWidthCard(
+            icon: Icons.groups_rounded,
+            label: 'Gestão de Usuários',
+            description: 'Administrar perfis e permissões',
+            color: Colors.indigo,
+            onTap: () => Navigator.pushNamed(context, '/user_management'),
+          ),
+
         ],
       ),
     ),
@@ -81,6 +168,18 @@ Widget build(BuildContext context) {
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.infoLight.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: AppColors.infoLight,
+            size: 20,
+          ),
+        ),
         const SizedBox(width: 12),
         Text(
           title,

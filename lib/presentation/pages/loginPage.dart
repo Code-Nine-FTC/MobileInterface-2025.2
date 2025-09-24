@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/api/auth_api_data_source.dart';
 
@@ -21,11 +22,28 @@ class _LoginPageState extends State<LoginPage> {
       _loading = true;
       _error = null;
     });
+
     try {
       final api = AuthApiDataSource();
-      await api.login(_emailController.text, _passwordController.text);
+      final userData = await api.login(
+        _emailController.text,
+        _passwordController.text,
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_role', userData['role']); 
+      print(  '[LOGIN] Role do usuário: ${userData['role']}');
+
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/menu');
+
+      switch (userData['role']) {
+        case 'ADMIN':
+          Navigator.pushReplacementNamed(context, '/admin_menu');
+          break;
+        default:
+          Navigator.pushReplacementNamed(context, '/menu');
+          break;
+      }
     } catch (e) {
       setState(() {
         _error = e.toString().replaceFirst('Exception: ', '');
