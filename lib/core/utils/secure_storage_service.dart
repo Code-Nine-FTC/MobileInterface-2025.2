@@ -1,4 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:mobile_interface_2025_2/domain/entities/user.dart';
+import 'dart:convert'; // Adicione este import para jsonEncode/jsonDecode
+
 
 class SecureStorageService {
   final _storage = const FlutterSecureStorage();
@@ -10,6 +13,26 @@ class SecureStorageService {
     await _storage.write(key: _tokenKey, value: token);
   }
 
+  // salva o id do usuário
+  Future<void> saveUserId(String userId) async {
+    await _storage.write(key: 'user_id', value: userId);
+  }
+
+  Future<void> saveUser(User user) async {
+    await _storage.write(key: 'user', value: jsonEncode(user.toJson()));
+  }
+
+  Future<User?> getUser() async {
+    final userData = await _storage.read(key: 'user');
+    if (userData == null) return null;
+
+    return User.fromJson(jsonDecode(userData));
+  }
+
+  Future<String?> getUserId() async {
+    return await _storage.read(key: 'user_id');
+  }
+
   // pega o token
   Future<String?> getToken() async {
     return await _storage.read(key: _tokenKey);
@@ -18,5 +41,6 @@ class SecureStorageService {
   // remove o token usado no logout
   Future<void> deleteToken() async {
     await _storage.delete(key: _tokenKey);
+    await _storage.deleteAll();
   }
 }
