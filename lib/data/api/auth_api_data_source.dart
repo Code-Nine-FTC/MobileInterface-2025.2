@@ -1,80 +1,64 @@
 import 'dart:convert';
-import 'dart:typed_data';
-import 'package:http/http.dart' as http;
+import 'package:mobile_interface_2025_2/domain/entities/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'base_api_service.dart';
 
 class AuthApiDataSource {
-  static const String _baseUrl = 'http://10.0.2.2:8080';
+  final _baseApiService = BaseApiService();
+  late final SharedPreferences prefs;
+  AuthApiDataSource() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    prefs = await SharedPreferences.getInstance();
+  }
+
+  String? _extractSessionId(Map<String, dynamic> data) {
+    // Tenta sections[0].id
+    if (data['sections'] is List && data['sections'].isNotEmpty) {
+      final firstSection = data['sections'][0];
+      if (firstSection is Map && firstSection['id'] != null) {
+        return firstSection['id'].toString();
+      }
+    }
+    // Tenta sectionIds[0]
+    if (data['sectionIds'] is List && data['sectionIds'].isNotEmpty) {
+      return data['sectionIds'][0].toString();
+    }
+    // Fallbacks diretos
+    return data['sessionId']?.toString() ?? data['userId']?.toString() ?? data['id']?.toString();
+  }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/login'),
-      headers: {'Content-Type': 'application/json; charset=UTF-8'},
-      body: jsonEncode({'email': email, 'password': password}),
-    );
+    try {
+      final response = await _baseApiService.post('/login',
+        data: {'email': email, 'password': password},
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      print('[AUTH] Resposta completa do login: $data');
-      
+      if (response.statusCode == 400) throw Exception('Credenciais inválidas');
+      if (response.statusCode == 500) throw Exception('Erro no servidor, tente novamente mais tarde');
+      if (response.statusCode == 401 || response.statusCode == 403) throw Exception('Não autorizado');
+
+      final data = response.data is Map<String, dynamic> ? response.data : jsonDecode(response.data);
       final token = data['token'];
       final role = data['role'];
-      
-      // Pegar sectionId do response
-      String? sessionId;
-      
-      // Tentar pegar de sections[0].id
-      if (data['sections'] != null && data['sections'] is List && data['sections'].isNotEmpty) {
-        final firstSection = data['sections'][0];
-        if (firstSection is Map && firstSection.containsKey('id')) {
-          sessionId = firstSection['id'].toString();
-        }
-      }
-      
-      // Fallback para sectionIds se existir
-      if (sessionId == null && data['sectionIds'] != null && data['sectionIds'] is List && data['sectionIds'].isNotEmpty) {
-        sessionId = data['sectionIds'][0].toString();
-      }
-      
-      // Fallback para outros campos
-      sessionId ??= data['sessionId']?.toString() ?? data['userId']?.toString() ?? data['id']?.toString();
-      
-      if (token != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', token);
-        print('[AUTH] Token salvo: $token');
-      }
-      if (role != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_role', role);
-        print('[AUTH] Role salvo: $role');
-      }
-      if (sessionId != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('session_id', sessionId);
-        print('[AUTH] SessionID salvo: $sessionId');
-      } else {
-        print('[AUTH] SessionID não encontrado no response');
-      }
+      final sessionId = _extractSessionId(data);
+      if (token == null || role == null || sessionId == null) throw Exception('Token ou Role não recebido do servidor');
+
       return data;
-    } else {
-      throw Exception('Falha no login: ${response.body}');
+    }
+    catch(e){
+      print( e.toString());
+      rethrow;
     }
   }
 
-  Future<Map<String, dynamic>> getProfile(String token) async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/api/users/profile'),
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Token inválido ou expirado');
+  Future<User?> getProfile(int userId) async {
+    final response = await _baseApiService.get('/users/$userId');
+    if (response.statusCode != 200) {
+      throw Exception('Falha ao carregar perfil: ${response.statusMessage}');
     }
+    return User.fromJson(jsonDecode(response.data));
   }
 }

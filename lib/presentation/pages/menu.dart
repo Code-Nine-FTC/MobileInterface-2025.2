@@ -34,7 +34,7 @@ class _MenuPageState extends State<MenuPage> {
         Navigator.pushReplacementNamed(context, '/home');
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/perfil');
+        Navigator.pushReplacementNamed(context, '/user_profile');
         break;
     }
   }
