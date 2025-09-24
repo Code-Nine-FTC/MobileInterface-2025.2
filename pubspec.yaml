@@ -1,0 +1,27 @@
+name: mobile_interface_2025_2
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.5.0
+  flutter_secure_storage: ^9.2.4
+  flutter_svg: ^2.0.7
+  mask_text_input_formatter: ^2.9.0
+  shared_preferences: ^2.5.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/logo-inf.svg
+    - assets/images/background.png

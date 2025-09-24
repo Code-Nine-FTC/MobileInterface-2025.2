@@ -1,0 +1,137 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+.gitinit
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Avoid old mobileinterface folder
+/mobileinterface/
+
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# API keys and configuration files
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+ios/firebase_app_id_file.json
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# iOS specific
+ios/Pods/
+ios/Runner.xcworkspace/xcuserdata/
+ios/Runner.xcodeproj/xcuserdata/
+ios/Flutter/flutter_export_environment.sh
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+
+# Android specific
+android/.gradle/
+android/app/release/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+*.keystore
+*.jks
+key.properties
+
+# Web specific
+web/favicon.png
+
+# Windows specific
+windows/flutter/
+
+# Linux specific  
+linux/flutter/
+
+# macOS specific
+macos/Flutter/ephemeral/
+macos/Runner.xcworkspace/xcuserdata/
+
+# Generated files
+**/generated_plugin_registrant.dart
+lib/generated/
+coverage/
+test/coverage_helper_test.dart
+
+# Language specific
+**/*.g.dart
+**/*.freezed.dart
+**/*.gr.dart
+**/*.chopper.dart
+**/*.json_annotation.dart
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Logs
+logs/
+*.log
+
+# Cache directories
+.cache/
+node_modules/
+
+# Testing
+coverage/
+test/coverage/
+
+# Code generation
+*.mocks.dart
