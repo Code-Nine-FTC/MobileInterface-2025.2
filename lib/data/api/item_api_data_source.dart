@@ -11,8 +11,45 @@ class ItemApiDataSource {
       
       final response = await _apiService.post('/items', data: item);
       
+      print('[ItemApiDataSource] Status Code recebido: ${response.statusCode}');
+      print('[ItemApiDataSource] Response Headers: ${response.headers}');
+      print('[ItemApiDataSource] Response Data Type: ${response.data.runtimeType}');
+      print('[ItemApiDataSource] Response Data: ${response.data}');
+      
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return response.data;
+        // Verificar o tipo da resposta
+        if (response.data is Map<String, dynamic>) {
+          print('[ItemApiDataSource] Retornando Map válido');
+          return response.data;
+        } else if (response.data is String) {
+          // Verificar se é JSON válido
+          try {
+            print('[ItemApiDataSource] Tentando fazer parse de String para JSON');
+            final parsed = jsonDecode(response.data);
+            if (parsed is Map<String, dynamic>) {
+              return parsed;
+            }
+          } catch (e) {
+            print('[ItemApiDataSource] String não é JSON válido, criando resposta genérica');
+          }
+          
+          // Se não for JSON, criar uma resposta genérica baseada na string
+          print('[ItemApiDataSource] Retornando Map genérico para resposta String');
+          return {
+            'success': true,
+            'message': response.data.toString(),
+            'statusCode': response.statusCode,
+          };
+        }
+        
+        // Se chegou aqui, retorna um Map genérico
+        print('[ItemApiDataSource] Retornando Map genérico devido a tipo inesperado');
+        return {
+          'success': true,
+          'message': 'Item criado com sucesso',
+          'data': response.data,
+          'statusCode': response.statusCode,
+        };
       } else {
         String errorMsg = response.data?.toString() ?? 'Erro desconhecido';
         if (response.data is Map && response.data.containsKey('message')) {
@@ -21,11 +58,19 @@ class ItemApiDataSource {
         throw Exception('Falha ao criar item: $errorMsg');
       }
     } on DioException catch (e) {
+      print('[ItemApiDataSource] DioException: ${e.type}');
+      print('[ItemApiDataSource] DioException message: ${e.message}');
+      print('[ItemApiDataSource] DioException response: ${e.response?.data}');
+      
       String errorMsg = e.response?.data?.toString() ?? e.message ?? 'Erro desconhecido';
       if (e.response?.data is Map && e.response!.data.containsKey('message')) {
         errorMsg = e.response!.data['message'];
       }
       throw Exception('Falha ao criar item: $errorMsg');
+    } catch (e) {
+      print('[ItemApiDataSource] Erro geral: $e');
+      print('[ItemApiDataSource] Erro tipo: ${e.runtimeType}');
+      rethrow;
     }
   }
 
