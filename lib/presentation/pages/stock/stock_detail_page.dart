@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../components/standartScreen.dart';
 import '../../../data/api/item_api_data_source.dart';
+import '../../../data/api/supplier_api_data_source.dart';
+import '../../../data/api/item_type_api_data_source.dart';
 
 class StockDetailPage extends StatefulWidget {
   final String? itemId;
@@ -17,6 +19,8 @@ class _StockDetailPageState extends State<StockDetailPage> {
   Map<String, dynamic>? _item;
   bool _loading = true;
   String? _error;
+  String? _supplierName;
+  String? _itemTypeName;
 
   @override
   void initState() {
@@ -24,9 +28,45 @@ class _StockDetailPageState extends State<StockDetailPage> {
     if (widget.itemData != null) {
       _item = widget.itemData;
       _loading = false;
+      _fetchAdditionalData(); // Buscar dados adicionais mesmo se já tiver itemData
     } else {
       _fetchItem();
     }
+  }
+
+  Future<void> _fetchAdditionalData() async {
+    if (_item == null) return;
+
+    // Buscar nome do fornecedor se houver supplierId
+    String? supplierName;
+    if (_item!['supplierId'] != null) {
+      try {
+        final supplierApi = SupplierApiDataSource();
+        final supplier = await supplierApi.getSupplierById(_item!['supplierId'].toString());
+        supplierName = supplier['name'];
+      } catch (e) {
+        print('Erro ao buscar fornecedor: $e');
+        supplierName = 'Fornecedor não encontrado';
+      }
+    }
+    
+    // Buscar nome do tipo de item se houver itemTypeId
+    String? itemTypeName;
+    if (_item!['itemTypeId'] != null) {
+      try {
+        final itemTypeApi = ItemTypeApiDataSource();
+        final itemType = await itemTypeApi.getItemTypeById(_item!['itemTypeId'].toString());
+        itemTypeName = itemType['name'];
+      } catch (e) {
+        print('Erro ao buscar tipo de item: $e');
+        itemTypeName = 'Tipo não encontrado';
+      }
+    }
+    
+    setState(() {
+      _supplierName = supplierName;
+      _itemTypeName = itemTypeName;
+    });
   }
 
   Future<void> _fetchItem() async {
@@ -44,10 +84,41 @@ class _StockDetailPageState extends State<StockDetailPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token') ?? '';
+      
+      // Buscar dados do item
       final api = ItemApiDataSource();
       final data = await api.getItemById(token, widget.itemId!);
+      
+      // Buscar nome do fornecedor se houver supplierId
+      String? supplierName;
+      if (data['supplierId'] != null) {
+        try {
+          final supplierApi = SupplierApiDataSource();
+          final supplier = await supplierApi.getSupplierById(data['supplierId'].toString());
+          supplierName = supplier['name'];
+        } catch (e) {
+          print('Erro ao buscar fornecedor: $e');
+          supplierName = 'Fornecedor não encontrado';
+        }
+      }
+      
+      // Buscar nome do tipo de item se houver itemTypeId
+      String? itemTypeName;
+      if (data['itemTypeId'] != null) {
+        try {
+          final itemTypeApi = ItemTypeApiDataSource();
+          final itemType = await itemTypeApi.getItemTypeById(data['itemTypeId'].toString());
+          itemTypeName = itemType['name'];
+        } catch (e) {
+          print('Erro ao buscar tipo de item: $e');
+          itemTypeName = 'Tipo não encontrado';
+        }
+      }
+      
       setState(() {
         _item = data;
+        _supplierName = supplierName;
+        _itemTypeName = itemTypeName;
         _loading = false;
       });
     } catch (e) {
@@ -230,7 +301,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              _item?['supplierName']?.toString() ?? 'Fornecedor não informado',
+                                              _supplierName ?? _item?['supplierName']?.toString() ?? 'Fornecedor não informado',
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 color: Colors.white.withValues(alpha: 0.9),
@@ -280,9 +351,36 @@ class _StockDetailPageState extends State<StockDetailPage> {
                               icon: Icons.info_outline,
                               children: [
                                 _modernInfoRow('Código', _item?['id']?.toString() ?? '-', Icons.qr_code),
-                                _modernInfoRow('Categoria', _item?['category']?.toString() ?? '-', Icons.category),
-                                _modernInfoRow('Lote', _item?['batch']?.toString() ?? '-', Icons.batch_prediction),
                                 _modernInfoRow('Validade', _formatDate(_item?['expirationDate']?.toString()), Icons.event),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Controle de estoque
+                            _sectionCard(
+                              title: 'Controle de Estoque',
+                              icon: Icons.inventory_2,
+                              children: [
+                                _modernInfoRow(
+                                  'Fornecedor', 
+                                  _supplierName ?? _item?['supplierName']?.toString() ?? 'Não informado', 
+                                  Icons.business
+                                ),
+                                _modernInfoRow(
+                                  'Estoque Mínimo', 
+                                  _item?['minimumStock']?.toString() ?? _item?['minStock']?.toString() ?? _item?['minimum_stock']?.toString() ?? 'Não informado', 
+                                  Icons.warning_amber
+                                ),
+                                _modernInfoRow(
+                                  'Estoque Máximo', 
+                                  _item?['maximumStock']?.toString() ?? _item?['maxStock']?.toString() ?? _item?['maximum_stock']?.toString() ?? 'Não informado', 
+                                  Icons.check_circle_outline
+                                ),
+                                _modernInfoRow(
+                                  'Tipo do Item', 
+                                  _itemTypeName ?? _item?['itemType']?.toString() ?? 'Não informado', 
+                                  Icons.label
+                                ),
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -441,7 +539,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
     );
   }
 
-  Widget _modernInfoRow(String label, String value, IconData icon) {
+  Widget _modernInfoRow(String label, String value, IconData icon, {Color? statusColor}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -455,10 +553,14 @@ class _StockDetailPageState extends State<StockDetailPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.infoLight.withValues(alpha: 0.1),
+              color: (statusColor ?? AppColors.infoLight).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: AppColors.infoLight, size: 18),
+            child: Icon(
+              icon, 
+              color: statusColor ?? AppColors.infoLight, 
+              size: 18
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -476,9 +578,10 @@ class _StockDetailPageState extends State<StockDetailPage> {
             flex: 3,
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
+                color: statusColor ?? Colors.black,
               ),
             ),
           ),

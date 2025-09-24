@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'base_api_service.dart';
 
@@ -11,7 +10,6 @@ class ItemTypeApiDataSource {
     int? lastUserId,
   }) async {
     try {
-      // Montar query parameters
       final queryParams = <String, String>{};
       if (itemTypeId != null) queryParams['itemTypeId'] = itemTypeId.toString();
       if (sectionId != null) queryParams['sectionId'] = sectionId.toString();
@@ -22,15 +20,11 @@ class ItemTypeApiDataSource {
         queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
 
-      print('[ItemTypeApiDataSource] Status Code: ${response.statusCode}');
-      print('[ItemTypeApiDataSource] Response: ${response.data}');
-
       if (response.statusCode == 200) {
         final data = response.data;
         if (data is List) {
           return List<Map<String, dynamic>>.from(data);
         } else if (data is Map && data.containsKey('content')) {
-          // Suporte para paginação Spring
           return List<Map<String, dynamic>>.from(data['content']);
         } else {
           throw Exception('Formato de resposta inesperado: $data');
@@ -47,6 +41,33 @@ class ItemTypeApiDataSource {
       throw Exception('Falha ao buscar tipos de item: ${e.response?.data ?? e.message}');
     } catch (e) {
 
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getItemTypeById(String itemTypeId) async {
+    try {
+      final response = await _apiService.get('/item-types/$itemTypeId');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) return data;
+        throw Exception('Formato de resposta inesperado ao obter tipo de item $itemTypeId: ${response.data}');
+      } else if (response.statusCode == 404) {
+        throw Exception('Tipo de item não encontrado');
+      } else {
+        throw Exception('Falha ao buscar tipo de item: ${response.data}');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw Exception('Tipo de item não encontrado');
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('Token expirado ou inválido. Faça login novamente.');
+      } else if (e.response?.statusCode == 403) {
+        throw Exception('Acesso negado.');
+      }
+      throw Exception('Falha ao buscar tipo de item: ${e.response?.data ?? e.message}');
+    } catch (e) {
       rethrow;
     }
   }

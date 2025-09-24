@@ -11,7 +11,8 @@ import 'presentation/pages/stock/stock_list_page.dart';
 import 'presentation/pages/stock/stock_detail_page.dart';
 import 'presentation/pages/user/user_register_page.dart';
 import 'presentation/pages/supplier/registration_supplier_page.dart';
-import 'presentation/pages/supplier/list_supplier_page.dart';
+import 'presentation/pages/supplier/list_supplier_simple.dart';
+import 'presentation/pages/supplier/supplier_details_page.dart';
 import 'presentation/pages/user/user_profile.dart';
 import 'presentation/pages/adiminMenu.dart';
 import 'presentation/pages/user/select_user_menu.dart';
@@ -83,6 +84,14 @@ class MyApp extends StatelessWidget {
               break;
             case '/supplier_management':
               builder = (context) => const ListSupplierPage();
+              break;
+            case '/supplier_details':
+              final supplierId = settings.arguments as String?;
+              if (supplierId != null) {
+                builder = (context) => SupplierDetailsPage(supplierId: supplierId);
+              } else {
+                builder = (context) => const ListSupplierPage();
+              }
               break;
             case '/user_profile':
               builder = (context) => const UserProfile();
