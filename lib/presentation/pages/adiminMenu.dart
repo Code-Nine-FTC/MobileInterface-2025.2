@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../components/standartScreen.dart';
 import '../components/navBar.dart';
 import '../../core/theme/app_colors.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AdiminMenuPage extends StatefulWidget {
   const AdiminMenuPage({super.key});

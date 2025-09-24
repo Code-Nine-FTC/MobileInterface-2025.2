@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import '../../data/api/supplier_api_data_source.dart';
 
 class SupplierFormScreen extends StatefulWidget {
   final GlobalKey<FormState> formKey;
@@ -19,12 +20,14 @@ class SupplierFormScreen extends StatefulWidget {
 }
 
 class _SupplierFormScreenState extends State<SupplierFormScreen> {
+  final SupplierApiDataSource _supplierApiDataSource = SupplierApiDataSource();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _cnpjController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _urlController = TextEditingController();
   bool _isActive = true;
+  bool _isLoading = false;
 
   final _cnpjFormatter = MaskTextInputFormatter(
     mask: '##.###.###/####-##',
@@ -44,17 +47,35 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
   }
 
   Future<void> _fetchSupplierData(String supplierId) async {
-    // TODO: Buscar dados do fornecedor pelo supplierId e preencher os controllers
-    // Exemplo:
-    // final supplier = await SupplierService.getSupplierById(supplierId);
-    // setState(() {
-    //   _nameController.text = supplier.name;
-    //   _cnpjController.text = supplier.cnpj;
-    //   _emailController.text = supplier.email;
-    //   _phoneController.text = supplier.phoneNumber;
-    //   _urlController.text = supplier.url ?? '';
-    //   _isActive = supplier.isActive;
-    // });
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final supplier = await _supplierApiDataSource.getSupplierById(supplierId);
+      setState(() {
+        _nameController.text = supplier['name'] ?? '';
+        _cnpjController.text = supplier['cnpj'] ?? '';
+        _emailController.text = supplier['email'] ?? '';
+        _phoneController.text = supplier['phone'] ?? '';
+        _urlController.text = supplier['url'] ?? '';
+        _isActive = supplier['isActive'] ?? true;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao carregar dados do fornecedor: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   String? _validateEmail(String? value) {
@@ -70,6 +91,28 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Container(
+        constraints: const BoxConstraints(maxWidth: 500),
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Container(
       constraints: const BoxConstraints(maxWidth: 500),
       padding: const EdgeInsets.all(16.0),

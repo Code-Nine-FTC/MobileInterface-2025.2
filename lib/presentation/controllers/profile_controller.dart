@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../domain/entities/user.dart';
 import '../../../domain/auth/auth_repository.dart'; 
-import '../../../core/utils/secure_storage_service.dart'; 
-import '../../../routes/home-router.dart'; 
-import '../../data/api/user_api_data.dart';
 
 class ProfileService {
   final AuthRepository _authRepository;
-  final UserApiData _userApiData = UserApiData();
 
   ProfileService(this._authRepository);
 

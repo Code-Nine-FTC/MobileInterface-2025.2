@@ -3,6 +3,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../components/navBar.dart';
 import '../../components/standartScreen.dart';
 import '../../../data/api/item_api_data_source.dart';
+import '../../../data/api/supplier_api_data_source.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StockListPage extends StatefulWidget {
@@ -157,6 +158,9 @@ class _StockListPageState extends State<StockListPage> {
       _allItems = await api.getItems(token, sectionId: effectiveSectionId, userRole: _userRole);
       _hasLoadedData = true;
       
+      // Buscar nomes dos fornecedores para items que só têm supplierId
+      await _fetchSupplierNames();
+      
       print('Carregados ${_allItems.length} itens do backend');
       
       final supplierSet = <String>{'Todos'}; 
@@ -200,6 +204,43 @@ class _StockListPageState extends State<StockListPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erro ao carregar itens: $e')),
         );
+      }
+    }
+  }
+
+  Future<void> _fetchSupplierNames() async {
+    final supplierApi = SupplierApiDataSource();
+    final Map<String, String> supplierCache = {};
+    
+    for (int i = 0; i < _allItems.length; i++) {
+      final item = _allItems[i];
+      
+      // Se já tem supplierName, pula
+      if (item['supplierName'] != null && item['supplierName'].toString().isNotEmpty) {
+        continue;
+      }
+      
+      // Se tem supplierId, busca o nome
+      final supplierId = item['supplierId'];
+      if (supplierId != null) {
+        final supplierIdStr = supplierId.toString();
+        
+        // Verifica se já foi buscado no cache
+        if (supplierCache.containsKey(supplierIdStr)) {
+          _allItems[i]['supplierName'] = supplierCache[supplierIdStr];
+        } else {
+          try {
+            final supplier = await supplierApi.getSupplierById(supplierIdStr);
+            final supplierName = supplier['name']?.toString() ?? 'Fornecedor não encontrado';
+            supplierCache[supplierIdStr] = supplierName;
+            _allItems[i]['supplierName'] = supplierName;
+          } catch (e) {
+            print('Erro ao buscar fornecedor $supplierIdStr: $e');
+            _allItems[i]['supplierName'] = 'Fornecedor não encontrado';
+          }
+        }
+      } else {
+        _allItems[i]['supplierName'] = 'Fornecedor não informado';
       }
     }
   }
