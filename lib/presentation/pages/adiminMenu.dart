@@ -124,7 +124,7 @@ Widget build(BuildContext context) {
                   label: 'Estoque',
                   description: 'Gerenciar produtos',
                   color: AppColors.infoLight,
-                  onTap: () => Navigator.pushNamed(context, '/user_menu'),
+                  onTap: () => Navigator.pushNamed(context, '/stock'),
                 ),
               ),
             ],

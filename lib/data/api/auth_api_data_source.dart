@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:mobile_interface_2025_2/domain/entities/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'base_api_service.dart';
+import '../../core/utils/secure_storage_service.dart';
 
 class AuthApiDataSource {
   final _baseApiService = BaseApiService();
+  final _secureStorage = SecureStorageService();
   late final SharedPreferences prefs;
   AuthApiDataSource() {
     _init();
@@ -44,12 +46,29 @@ class AuthApiDataSource {
       final token = data['token'];
       final role = data['role'];
       final sessionId = _extractSessionId(data);
-      if (token == null || role == null || sessionId == null) throw Exception('Token ou Role não recebido do servidor');
+      
+      if (token == null || role == null || sessionId == null) {
+        throw Exception('Token ou Role não recebido do servidor');
+      }
+
+      // Salvar token e dados no SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', token);
+      await prefs.setString('user_role', role);
+      await prefs.setString('session_id', sessionId);
+      
+      // Também salvar no SecureStorageService para uso do BaseApiService
+      await _secureStorage.saveToken(token);
+      await _secureStorage.saveUserId(sessionId);
+      
+      print('[AuthAPI] Token salvo: ${token.substring(0, 10)}...');
+      print('[AuthAPI] Role salva: $role');
+      print('[AuthAPI] SessionId salvo: $sessionId');
 
       return data;
     }
     catch(e){
-      print( e.toString());
+      print('[AuthAPI] Erro no login: ${e.toString()}');
       rethrow;
     }
   }

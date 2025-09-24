@@ -21,6 +21,9 @@ class BaseApiService {
           final token = await _storage.getToken();
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token'; // Adiciona token no header
+            print('[BaseApiService] Header Authorization adicionado');
+          } else {
+            print('[BaseApiService] ATENÇÃO: Token não encontrado!');
           }
           handler.next(options);
         },
@@ -37,8 +40,8 @@ class BaseApiService {
   }
 
   // Método para GET
-  Future<Response> get(String path, {Map<String, dynamic>? queryParameters}) async {
-    return await _dio.get(path, queryParameters: queryParameters);
+  Future<Response> get(String path, {Map<String, dynamic>? queryParameters, Options? options}) async {
+    return await _dio.get(path, queryParameters: queryParameters, options: options);
   }
 
   // Método para POST

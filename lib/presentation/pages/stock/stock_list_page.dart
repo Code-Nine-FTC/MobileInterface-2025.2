@@ -134,13 +134,19 @@ class _StockListPageState extends State<StockListPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token') ?? '';
-      final sectionId = prefs.getString('session_id') ?? '';
+      final sectionId = prefs.getString('session_id') ?? '';  // Corrigido: session_id, não section_id
       final api = ItemApiDataSource();
+      
+      print('[StockList] Token: ${token.isNotEmpty ? "${token.substring(0, 10)}..." : "VAZIO"}');
+      print('[StockList] SectionId da sessão: "$sectionId"');
+      print('[StockList] Role do usuário: $_userRole');
       
       String? effectiveSectionId;
       if (_userRole == 'ADMIN') {
         if (_selectedSection != null && _selectedSection!.isNotEmpty) {
           effectiveSectionId = _selectedSection;
+        } else {
+          effectiveSectionId = sectionId.isNotEmpty ? sectionId : null;
         }
       } else {
         effectiveSectionId = sectionId;
