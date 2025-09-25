@@ -91,7 +91,7 @@ class ItemApiDataSource {
       print('[ItemApiDataSource] Query params: $queryParams');
       
       // Fazer a requisição com token manual no header
-      final response = await _apiService.get('/items/all', queryParameters: queryParams);
+      final response = await _apiService.get('/items', queryParameters: queryParams);
 
       print('[ItemApiDataSource] Status Code: ${response.statusCode}');
       print('[ItemApiDataSource] Response Headers: ${response.headers}');
