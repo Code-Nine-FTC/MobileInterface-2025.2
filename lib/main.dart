@@ -18,6 +18,9 @@ import 'presentation/pages/adiminMenu.dart';
 import 'presentation/pages/user/select_user_menu.dart';
 import 'presentation/pages/order/order_form_page.dart';
 import 'presentation/pages/order/order_detail_page.dart';
+import 'presentation/pages/user/change_password.dart';
+
+
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() {
@@ -95,10 +98,13 @@ class MyApp extends StatelessWidget {
                 builder = (context) => const ListSupplierPage();
               }
               break;
+            case '/changePassword':
+              builder = (context) => const ChangePassword();
+              break;
             case '/user_profile':
               builder = (context) => const UserProfile();
               break;
-             case '/order_form':
+            case '/order_form':
               builder = (context) => OrderFormPage();
               break;
             case '/order_detail':
@@ -154,6 +160,7 @@ class MyApp extends StatelessWidget {
           '/supplier_register': (context) => const RegistrationSupplierPage(),
           '/supplier_management': (context) => const ListSupplierPage(),
           '/user_profile': (context) => const UserProfile(),
+          "/changePassword": (context) => const ChangePassword(),
         },
       ),
     );

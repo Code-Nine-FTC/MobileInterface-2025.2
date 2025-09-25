@@ -1,23 +1,19 @@
-import 'package:mobile_interface_2025_2/domain/entities/user.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
+import 'base_api_service.dart';
+import 'package:dio/dio.dart';
 
 class UserApiData {
-  static const String _baseUrl = 'http://10.0.2.2:8080';
+  final BaseApiService _apiService = BaseApiService();
 
-  Future<User> getCurrentUser(int userId, String token) async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/users/$userId'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return User.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to load user');
+  Future<bool> updatePassword(int userId, String password, String name) async {
+    try{
+       final response = await _apiService.put('/users/${userId}', data: {"password": password, "name": name} );
+       if (response.statusCode == 200) return true;
+       return false;
+    }on DioException catch (e){
+      print(e);
+      throw Exception('Falha ao excluir fornecedor: $e');
     }
   }
+
+
 }

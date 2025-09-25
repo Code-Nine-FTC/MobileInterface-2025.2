@@ -9,21 +9,25 @@ import '../../components/navbar.dart';
 import 'package:flutter/material.dart';
 
 
-class UserProfile extends StatefulWidget {
-  const UserProfile({super.key});
+class ChangePassword extends StatefulWidget {
+  const ChangePassword({super.key});
 
   @override
-  State<UserProfile> createState() => _UserProfileState();
+  State<ChangePassword> createState() => _ChangePasswordState();
 }
 
-class _UserProfileState extends State<UserProfile> {
+class _ChangePasswordState extends State<ChangePassword> {
   late final ProfileService _profileService;
   final authRepository = AuthRepositoryImpl(
     apiDataSource: AuthApiDataSource(),
     storageService: SecureStorageService(),
   );
+
   User? _user;
   int _selectedIndex = 0;
+  final _formKey = GlobalKey<FormState>();
+  String? _newPassword;
+  String? _confirmPassword;
   @override
   void initState() {
     super.initState();
@@ -61,8 +65,8 @@ class _UserProfileState extends State<UserProfile> {
   @override
   Widget build(BuildContext context) {
     return StandardScreen(
-      title: 'Meu Perfil',
-       showBackButton: false,
+      title: 'Atualizar Senha',
+      showBackButton: false,
       bottomNavigationBar: CustomNavbar(
         currentIndex: _selectedIndex,
         onTap: _onNavTap,
@@ -77,7 +81,7 @@ class _UserProfileState extends State<UserProfile> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Carregando perfil...',
+                    'Carregando ...',
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 16,
@@ -91,7 +95,6 @@ class _UserProfileState extends State<UserProfile> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  
                   // Nome do usuário
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -108,9 +111,7 @@ class _UserProfileState extends State<UserProfile> {
                       ),
                     ),
                   ),
-                  
                   const SizedBox(height: 8),
-                  
                   // Email do usuário
                   Text(
                     _user!.email,
@@ -118,39 +119,68 @@ class _UserProfileState extends State<UserProfile> {
                       color: Colors.grey[600],
                     ),
                   ),
-                  
-                  const SizedBox(height: 40),
-                  
-                  // Cards de ações
-                  _buildActionCard(
-                    icon: Icons.lock_outline,
-                    title: 'Alterar Senha',
-                    subtitle: 'Atualize sua senha de acesso',
-                    color: Colors.blue,
-                    onTap: () => _profileService.changePassword(context),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // adicionar futuramente
-                  // _buildActionCard(
-                  //   icon: Icons.settings_outlined,
-                  //   title: 'Configurações',
-                  //   subtitle: 'Personalize o aplicativo',
-                  //   color: Colors.green,
-                  //   onTap: () => _profileService.openSettings(context),
-                  // ),
-                  
-                  // const SizedBox(height: 16),
-                  
-                  _buildActionCard(
-                    icon: Icons.exit_to_app,
-                    title: 'Sair do App',
-                    subtitle: 'Encerrar sua sessão',
-                    color: Colors.red,
-                    onTap: () async {
-                      await _showLogoutConfirmation();
-                    },
+                  const SizedBox(height: 32),
+                  // Formulário de troca de senha
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Nova senha',
+                            border: OutlineInputBorder(),
+                          ),
+                          onChanged: (value) => _newPassword = value,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Digite a nova senha';
+                            }
+                            if (value.length < 6) {
+                              return 'A senha deve ter pelo menos 6 caracteres';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Confirmar nova senha',
+                            border: OutlineInputBorder(),
+                          ),
+                          onChanged: (value) => _confirmPassword = value,
+                          validator: (value) {
+                            if (value != _newPassword) {
+                              return 'As senhas não coincidem';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () async {
+                            if (_formKey.currentState!.validate()) {
+                              if (_user != null && _newPassword != null) {
+                                 bool success = await _profileService.updatePassword(_user!.id, _newPassword!, _user!.name);
+                                if (success) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Senha atualizada com sucesso! Faça login novamente.')),
+                                  );
+                                  _profileService.logout();
+                                  Navigator.pushReplacementNamed(context, '/login');
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Falha ao atualizar a senha')),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                          child: const Text('Salvar nova senha'),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -226,45 +256,6 @@ class _UserProfileState extends State<UserProfile> {
           ),
         ),
       ),
-    );
-  }
-
-  Future<void> _showLogoutConfirmation() async {
-    return showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.logout, color: Colors.red),
-              SizedBox(width: 10),
-              Text('Sair do App'),
-            ],
-          ),
-          content: const Text('Tem certeza que deseja sair do aplicativo?'),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _profileService.logout();
-                Navigator.pushReplacementNamed(context, '/login');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Sair'),
-            ),
-          ],
-        );
-      },
     );
   }
 }
