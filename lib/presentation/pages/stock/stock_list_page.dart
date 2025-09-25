@@ -5,6 +5,9 @@ import '../../components/standartScreen.dart';
 import '../../../data/api/item_api_data_source.dart';
 import '../../../data/api/supplier_api_data_source.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/utils/secure_storage_service.dart';
+import '../../../core/utils/secure_storage_service.dart';
+
 
 class StockListPage extends StatefulWidget {
   const StockListPage({super.key});
@@ -15,6 +18,8 @@ class StockListPage extends StatefulWidget {
 
 class _StockListPageState extends State<StockListPage> {
   int _selectedIndex = 0;
+  
+  final SecureStorageService _storageService = SecureStorageService();
   List<Map<String, dynamic>> _allItems = [];
   List<Map<String, dynamic>> _filteredItems = [];
   List<Map<String, dynamic>> _displayedItems = [];
@@ -43,9 +48,8 @@ class _StockListPageState extends State<StockListPage> {
   }
 
   Future<void> _loadUserRoleAndItems() async {
-    final prefs = await SharedPreferences.getInstance();
-    _userRole = prefs.getString('user_role');
-    
+    final user = await _storageService.getUser();
+    _userRole = user?.role;
     _selectedSupplier ??= 'Todos';
     _selectedSection ??= '';
     
@@ -133,12 +137,12 @@ class _StockListPageState extends State<StockListPage> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token') ?? '';
-      final sectionId = prefs.getString('session_id') ?? '';  // Corrigido: session_id, não section_id
+      final user = await _storageService.getUser();
+      final token = await _storageService.getToken();
+      final sectionId = user?.sessionId ?? '';  // Corrigido: session_id, não section_id
       final api = ItemApiDataSource();
-      
-      print('[StockList] Token: ${token.isNotEmpty ? "${token.substring(0, 10)}..." : "VAZIO"}');
+
+      print('[StockList] Token: ${token != null  ? "${token.substring(0, 10)}..." : "VAZIO"}');
       print('[StockList] SectionId da sessão: "$sectionId"');
       print('[StockList] Role do usuário: $_userRole');
       
@@ -155,7 +159,7 @@ class _StockListPageState extends State<StockListPage> {
       
       print('[StockList] Role: $_userRole, Seção selecionada: $_selectedSection, SectionId efetivo: $effectiveSectionId');
       
-      _allItems = await api.getItems(token, sectionId: effectiveSectionId, userRole: _userRole);
+      _allItems = await api.getItems(sectionId: effectiveSectionId, userRole: _userRole);
       _hasLoadedData = true;
       
       // Buscar nomes dos fornecedores para items que só têm supplierId

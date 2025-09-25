@@ -7,14 +7,8 @@ import '../../core/utils/secure_storage_service.dart';
 class AuthApiDataSource {
   final _baseApiService = BaseApiService();
   final _secureStorage = SecureStorageService();
-  late final SharedPreferences prefs;
-  AuthApiDataSource() {
-    _init();
-  }
-
-  Future<void> _init() async {
-    prefs = await SharedPreferences.getInstance();
-  }
+  
+  
 
   String? _extractSessionId(Map<String, dynamic> data) {
     // Tenta sections[0].id
@@ -32,7 +26,7 @@ class AuthApiDataSource {
     return data['sessionId']?.toString() ?? data['userId']?.toString() ?? data['id']?.toString();
   }
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<User?> login(String email, String password) async {
     try {
       final response = await _baseApiService.post('/login',
         data: {'email': email, 'password': password},
@@ -42,30 +36,27 @@ class AuthApiDataSource {
       if (response.statusCode == 500) throw Exception('Erro no servidor, tente novamente mais tarde');
       if (response.statusCode == 401 || response.statusCode == 403) throw Exception('Não autorizado');
 
-      final data = response.data is Map<String, dynamic> ? response.data : jsonDecode(response.data);
+      final data = response.data ;
+      print(  '[AuthAPI] Resposta do login: $data');
       final token = data['token'];
       final role = data['role'];
-      final sessionId = _extractSessionId(data);
-      
-      if (token == null || role == null || sessionId == null) {
+      final userId = data['Id'];
+      String? sessionId = _extractSessionId(data);
+
+      if (token == null || role == null || sessionId == null || userId == null) {
         throw Exception('Token ou Role não recebido do servidor');
       }
-
-      // Salvar token e dados no SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', token);
-      await prefs.setString('user_role', role);
-      await prefs.setString('session_id', sessionId);
-      
-      // Também salvar no SecureStorageService para uso do BaseApiService
       await _secureStorage.saveToken(token);
-      await _secureStorage.saveUserId(sessionId);
-      
-      print('[AuthAPI] Token salvo: ${token.substring(0, 10)}...');
-      print('[AuthAPI] Role salva: $role');
-      print('[AuthAPI] SessionId salvo: $sessionId');
+      User? user = await getProfile(userId);
+      user?.sessionId = sessionId;
+      user?.role = role;
+      if (user != null) {
+        await _secureStorage.saveUser(user);
+        print('[AuthAPI] Usuário salvo: ${user.toJson()}');
+      }
+      await _secureStorage.saveUserId(userId.toString());
 
-      return data;
+      return user;
     }
     catch(e){
       print('[AuthAPI] Erro no login: ${e.toString()}');
@@ -78,6 +69,7 @@ class AuthApiDataSource {
     if (response.statusCode != 200) {
       throw Exception('Falha ao carregar perfil: ${response.statusMessage}');
     }
-    return User.fromJson(jsonDecode(response.data));
+    final data = response.data is Map<String, dynamic> ? response.data : jsonDecode(response.data);
+    return User.fromJson(data);
   }
 }

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/api/auth_api_data_source.dart';
 
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -92,21 +93,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         _passwordController.text,
       );
 
-      // O AuthApiDataSource já salva o token automaticamente
-      // Vamos apenas confirmar que foi salvo e extrair informações adicionais
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-      
-      if (token == null || token.isEmpty) {
-        throw Exception('Falha ao salvar token de autenticação');
-      }
-      
-      print('[LOGIN] Login bem-sucedido para role: ${userData['role']}');
-      print('[LOGIN] Token salvo: ${token.substring(0, 10)}...');
-
       if (!mounted) return;
 
-      switch (userData['role']) {
+      switch (userData?.role) {
         case 'ADMIN':
           Navigator.pushReplacementNamed(context, '/admin_menu');
           break;

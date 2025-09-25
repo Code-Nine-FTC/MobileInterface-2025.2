@@ -4,6 +4,7 @@ import '../../components/standartScreen.dart';
 import '../../components/navBar.dart'; // se CustomNavbar estiver aqui
 import '../../../data/api/item_api_data_source.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/utils/secure_storage_service.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -16,7 +17,7 @@ class RegistrationPage extends StatefulWidget {
 class _RegistrationPageState extends State<RegistrationPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final GlobalKey<ProductFormState> _productFormKey = GlobalKey<ProductFormState>();
-
+  final SecureStorageService _storageService = SecureStorageService();
   int _selectedIndex = 0;
 
   void _onNavTap(int index) {
@@ -72,13 +73,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
       }
 
       try {
-        final prefs = await SharedPreferences.getInstance();
-        final token = prefs.getString('auth_token') ?? '';
-        
+        final token = await _storageService.getToken();
+
         print('[RegistrationPage] Enviando dados para API: $values');
         
         final api = ItemApiDataSource();
-        await api.createItem(values, token);
+        await api.createItem(values);
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Produto registrado com sucesso!')),

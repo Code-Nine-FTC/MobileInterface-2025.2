@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/api/supplier_api_data_source.dart';
 import '../../data/api/item_type_api_data_source.dart';
+ import '../../../core/utils/secure_storage_service.dart';
 
 class ProductForm extends StatefulWidget {
   final GlobalKey<FormState> formKey;
@@ -34,6 +35,8 @@ class ProductFormState extends State<ProductForm> {
   String? _itemTypeId;
   final TextEditingController _minimumStockController = TextEditingController();
   final TextEditingController _maximumStockController = TextEditingController();
+
+  final SecureStorageService _storageService = SecureStorageService();
   bool _isActive = true; 
   bool _hasExpiryDate = false; 
 
@@ -53,10 +56,10 @@ class ProductFormState extends State<ProductForm> {
 
   Future<void> _loadDropdownData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userRole = prefs.getString('user_role') ?? '';
-      final sectionId = prefs.getString('session_id');
-      
+      final user = await _storageService.getUser();
+      final userRole = user?.role ?? '';
+      final sectionId = user?.sessionId;
+
       print('[FormProduct] Carregando dados do dropdown para role: $userRole');
 
       final futures = await Future.wait([
