@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../components/standartScreen.dart';
 import '../../../data/api/item_api_data_source.dart';
 import '../../../data/api/supplier_api_data_source.dart';
+import '../../../core/utils/secure_storage_service.dart';
 import '../../../data/api/item_type_api_data_source.dart';
 
 class StockDetailPage extends StatefulWidget {
@@ -21,6 +22,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
   String? _error;
   String? _supplierName;
   String? _itemTypeName;
+  final SecureStorageService _storageService = SecureStorageService();
 
   @override
   void initState() {
@@ -82,12 +84,9 @@ class _StockDetailPageState extends State<StockDetailPage> {
       _error = null;
     });
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token') ?? '';
-      
       // Buscar dados do item
       final api = ItemApiDataSource();
-      final data = await api.getItemById(token, widget.itemId!);
+      final data = await api.getItemById(widget.itemId!);
       
       // Buscar nome do fornecedor se houver supplierId
       String? supplierName;

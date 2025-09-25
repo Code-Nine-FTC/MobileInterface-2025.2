@@ -26,12 +26,12 @@ class StandardScreen extends StatelessWidget {
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.only(top: 35, bottom: 4),
+            padding: const EdgeInsets.only(top: 30, bottom: 20),
             decoration: BoxDecoration(
               color: AppColors.primaryLight,
               borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
+                bottomLeft: Radius.circular(50),
+                bottomRight: Radius.circular(50),
               ),
               boxShadow: [
                 BoxShadow(

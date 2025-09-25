@@ -14,22 +14,10 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<User?> login(String email, String password) async {
     try {
       final response = await apiDataSource.login(email, password);
-      print(response);
-      
-      final token = response['token'];
-      final user = UserModel.fromJson(response['user']);
-
-      if (token == null) {
-        throw Exception('Token não recebido do servidor');
-      }
-
-      await storageService.saveToken(token);
-      await storageService.saveUserId(user.id);
-      await storageService.saveUser(user);
-      return user;
+      return response;
     } catch (e) {
       // se der erro no login garante que qualquer coisa em token seja removida
-      await storageService.deleteToken();
+      await logout();
       return null;
     }
   }

@@ -5,7 +5,7 @@ import 'base_api_service.dart';
 class ItemApiDataSource {
   final BaseApiService _apiService = BaseApiService();
 
-  Future<Map<String, dynamic>> createItem(Map<String, dynamic> item, String token) async {
+  Future<Map<String, dynamic>> createItem(Map<String, dynamic> item) async {
     try {
       print('[ItemApiDataSource] Enviando JSON para backend: ${jsonEncode(item)}');
       
@@ -74,7 +74,7 @@ class ItemApiDataSource {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getItems(String token, {String? sectionId, String? userRole}) async {
+  Future<List<Map<String, dynamic>>> getItems( {String? sectionId, String? userRole}) async {
     try {
       Map<String, String> queryParams = {};
       
@@ -89,19 +89,9 @@ class ItemApiDataSource {
       
       print('[ItemApiDataSource] Role: $userRole, SectionId: $sectionId');
       print('[ItemApiDataSource] Query params: $queryParams');
-      print('[ItemApiDataSource] Token being used: ${token.substring(0, 10)}...');
       
       // Fazer a requisição com token manual no header
-      final response = await _apiService.get(
-        '/items', 
-        queryParameters: queryParams.isNotEmpty ? queryParams : null,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        ),
-      );
+      final response = await _apiService.get('/items/all', queryParameters: queryParams);
 
       print('[ItemApiDataSource] Status Code: ${response.statusCode}');
       print('[ItemApiDataSource] Response Headers: ${response.headers}');
@@ -146,7 +136,7 @@ class ItemApiDataSource {
   }
 
   // Busca detalhes de um item por ID
-  Future<Map<String, dynamic>> getItemById(String token, String id) async {
+  Future<Map<String, dynamic>> getItemById(String id) async {
     try {
       final response = await _apiService.get('/items/$id');
 

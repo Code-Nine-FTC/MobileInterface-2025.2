@@ -25,6 +25,7 @@ class SecureStorageService {
   Future<User?> getUser() async {
     final userData = await _storage.read(key: 'user');
     if (userData == null) return null;
+    print(userData);
 
     return User.fromJson(jsonDecode(userData));
   }

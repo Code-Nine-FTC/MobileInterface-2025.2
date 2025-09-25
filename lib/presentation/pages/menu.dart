@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../components/standartScreen.dart';
 import '../components/navBar.dart';
 import '../../core/theme/app_colors.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/utils/secure_storage_service.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
@@ -13,6 +13,7 @@ class MenuPage extends StatefulWidget {
 
 class _MenuPageState extends State<MenuPage> {
   String? _userRole;
+  final SecureStorageService _storageService = SecureStorageService();
 
   @override
   void initState() {
@@ -21,9 +22,9 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   Future<void> _loadUserRole() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _storageService.getUser();
     setState(() {
-      _userRole = prefs.getString('user_role');
+      _userRole = prefs?.role;
     });
     print('[Menu] Role do usuário: $_userRole');
   }

@@ -5,6 +5,8 @@ import '../../../data/api/supplier_api_data_source.dart';
 import '../../components/standartScreen.dart';
 import '../../components/navBar.dart';
 
+import '../../../core/utils/secure_storage_service.dart';
+
 class ListSupplierPage extends StatefulWidget {
   const ListSupplierPage({super.key});
 
@@ -16,7 +18,7 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
   int _selectedIndex = 1; // Índice para fornecedores
   final SupplierApiDataSource _supplierApi = SupplierApiDataSource();
   final TextEditingController _searchController = TextEditingController();
-  
+  final SecureStorageService _storageService = SecureStorageService();
   List<Map<String, dynamic>> _suppliers = [];
   List<Map<String, dynamic>> _filteredSuppliers = [];
   bool _isLoading = true;
@@ -42,9 +44,9 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
         _error = null;
       });
 
-      final prefs = await SharedPreferences.getInstance();
-      final userRole = prefs.getString('user_role') ?? '';
-      
+      final user = await _storageService.getUser();
+      final userRole = user?.role;
+
       print('[ListSupplierPage] Carregando fornecedores para role: $userRole');
 
       final suppliers = await _supplierApi.getSuppliers(
