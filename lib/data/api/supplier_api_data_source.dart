@@ -14,7 +14,14 @@ class SupplierApiDataSource {
       Map<String, String> queryParams = {};
       
       if (supplierId != null) queryParams['supplierId'] = supplierId.toString();
-      if (sectionId != null) queryParams['sectionId'] = sectionId.toString();
+      
+      // Para usuários não-ADMIN, sempre adicionar sectionId se fornecido
+      if (userRole != 'ADMIN' && sectionId != null) {
+        queryParams['sectionId'] = sectionId.toString();
+        print('[SupplierApiDataSource] Usuário $userRole - filtrando por sectionId: $sectionId');
+      } else if (userRole == 'ADMIN') {
+        print('[SupplierApiDataSource] Usuário ADMIN - buscando todos os fornecedores');
+      }
       
       final response = await _apiService.get(
         '/suppliers', 

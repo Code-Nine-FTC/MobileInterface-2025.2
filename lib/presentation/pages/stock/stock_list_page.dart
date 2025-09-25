@@ -148,13 +148,18 @@ class _StockListPageState extends State<StockListPage> {
       
       String? effectiveSectionId;
       if (_userRole == 'ADMIN') {
+        // Para ADMIN: se selecionou uma seção específica, usa ela; senão, null para ver todos
         if (_selectedSection != null && _selectedSection!.isNotEmpty) {
           effectiveSectionId = _selectedSection;
+          print('[StockList] ADMIN - Filtrando por seção selecionada: $_selectedSection');
         } else {
-          effectiveSectionId = sectionId.isNotEmpty ? sectionId : null;
+          effectiveSectionId = null;  // null = todos os itens para ADMIN
+          print('[StockList] ADMIN - Buscando todos os itens (sem filtro de seção)');
         }
       } else {
+        // Para não-ADMIN: sempre usa a seção do usuário
         effectiveSectionId = sectionId;
+        print('[StockList] Usuário $_userRole - Filtrando por seção: $sectionId');
       }
       
       print('[StockList] Role: $_userRole, Seção selecionada: $_selectedSection, SectionId efetivo: $effectiveSectionId');
@@ -338,225 +343,248 @@ class _StockListPageState extends State<StockListPage> {
                   ),
                 ],
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  // Ícone de filtro
-                  Icon(
-                    Icons.filter_list,
-                    color: AppColors.infoLight,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  
-                  // Campo de pesquisa compacto
-                  Expanded(
-                    flex: 3,
-                    child: Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _searchQuery.isNotEmpty 
-                              ? AppColors.infoLight.withValues(alpha: 0.3)
-                              : Colors.grey[300]!,
-                          width: 1,
-                        ),
+                  // Primeira linha: Campo de busca e contador
+                  Row(
+                    children: [
+                      // Ícone de filtro
+                      Icon(
+                        Icons.filter_list,
+                        color: AppColors.infoLight,
+                        size: 20,
                       ),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Buscar...',
-                          hintStyle: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 14,
+                      const SizedBox(width: 12),
+                      
+                      // Campo de pesquisa
+                      Expanded(
+                        child: Container(
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _searchQuery.isNotEmpty 
+                                  ? AppColors.infoLight.withValues(alpha: 0.3)
+                                  : Colors.grey[300]!,
+                              width: 1,
+                            ),
                           ),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.grey[400],
-                            size: 18,
-                          ),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? GestureDetector(
-                                  onTap: () => _searchController.clear(),
-                                  child: Icon(
-                                    Icons.clear,
-                                    color: Colors.grey[400],
-                                    size: 16,
-                                  ),
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, 
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(width: 8),
-                  
-                  // Dropdown Fornecedor compacto
-                  if (_suppliers.isNotEmpty)
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        height: 40,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: _selectedSupplier != 'Todos' 
-                                ? AppColors.infoLight.withValues(alpha: 0.3)
-                                : Colors.grey[300]!,
-                            width: 1,
-                          ),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _getValidSupplierValue(),
-                            hint: Text(
-                              'Fornecedor',
-                              style: TextStyle(
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Buscar produtos...',
+                              hintStyle: TextStyle(
                                 color: Colors.grey[500],
-                                fontSize: 12,
+                                fontSize: 14,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: Colors.grey[400],
+                                size: 18,
+                              ),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? GestureDetector(
+                                      onTap: () => _searchController.clear(),
+                                      child: Icon(
+                                        Icons.clear,
+                                        color: Colors.grey[400],
+                                        size: 16,
+                                      ),
+                                    )
+                                  : null,
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, 
+                                vertical: 10,
                               ),
                             ),
-                            isExpanded: true,
-                            icon: Icon(
-                              Icons.arrow_drop_down,
-                              color: Colors.grey[400],
-                              size: 20,
-                            ),
-                            style: TextStyle(
-                              color: Colors.grey[700],
-                              fontSize: 12,
-                            ),
-                            items: _suppliers.map((supplier) {
-                              return DropdownMenuItem(
-                                value: supplier,
-                                child: Text(
-                                  supplier,
-                                  style: const TextStyle(fontSize: 12),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedSupplier = value;
-                                _applyFilters();
-                              });
-                            },
                           ),
                         ),
                       ),
-                    ),
-                  
-                  // Dropdown Seção para ADMIN
-                  if (_userRole == 'ADMIN') ...[
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        height: 40,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: _selectedSection != '' 
-                                ? AppColors.infoLight.withValues(alpha: 0.3)
-                                : Colors.grey[300]!,
-                            width: 1,
-                          ),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _getValidSectionValue(),
-                            isExpanded: true,
-                            icon: Icon(
-                              Icons.arrow_drop_down,
-                              color: Colors.grey[400],
-                              size: 20,
-                            ),
-                            style: TextStyle(
-                              color: Colors.grey[700],
-                              fontSize: 12,
-                            ),
-                            items: _sections.map((section) {
-                              return DropdownMenuItem(
-                                value: section['id'],
-                                child: Text(
-                                  section['name']!,
-                                  style: const TextStyle(fontSize: 12),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedSection = value;
-                              });
-                              _loadAllItems();
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                  
-                  const SizedBox(width: 8),
-                  
-                  // Contador de resultados e limpar
-                  if (_hasLoadedData) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.infoLight.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${_filteredItems.length}',
-                        style: TextStyle(
-                          color: AppColors.infoLight,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (_searchQuery.isNotEmpty || 
-                        _selectedSupplier != 'Todos' || 
-                        (_userRole == 'ADMIN' && _selectedSection != '')) ...[
-                      const SizedBox(width: 4),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _searchController.clear();
-                            _selectedSupplier = 'Todos';
-                            _selectedSection = '';
-                            _searchQuery = '';
-                          });
-                          _loadAllItems();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
+                      
+                      const SizedBox(width: 12),
+                      
+                      // Contador de resultados
+                      if (_hasLoadedData) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(6),
+                            color: AppColors.infoLight.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(
-                            Icons.clear_all,
-                            size: 16,
-                            color: Colors.grey[600],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                color: AppColors.infoLight,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${_filteredItems.length}',
+                                style: TextStyle(
+                                  color: AppColors.infoLight,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Segunda linha: Dropdowns de filtros
+                  Row(
+                    children: [
+                      // Espaço para alinhar com o ícone da linha de cima
+                      const SizedBox(width: 32),
+                      
+                      // Dropdown Fornecedor (apenas para não-ADMIN)
+                      if (_suppliers.isNotEmpty && _userRole != 'ADMIN')
+                        Expanded(
+                          child: Container(
+                            height: 40,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _selectedSupplier != 'Todos' 
+                                    ? AppColors.infoLight.withValues(alpha: 0.3)
+                                    : Colors.grey[300]!,
+                                width: 1,
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _getValidSupplierValue(),
+                                hint: Text(
+                                  'Fornecedor',
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                isExpanded: true,
+                                icon: Icon(
+                                  Icons.arrow_drop_down,
+                                  color: Colors.grey[400],
+                                  size: 20,
+                                ),
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 12,
+                                ),
+                                items: _suppliers.map((supplier) {
+                                  return DropdownMenuItem(
+                                    value: supplier,
+                                    child: Text(
+                                      supplier,
+                                      style: const TextStyle(fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedSupplier = value;
+                                    _applyFilters();
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      
+                      // Dropdown Seção para ADMIN
+                      if (_userRole == 'ADMIN') ...[
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            height: 40,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _selectedSection != '' 
+                                    ? AppColors.infoLight.withValues(alpha: 0.3)
+                                    : Colors.grey[300]!,
+                                width: 1,
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _getValidSectionValue(),
+                                isExpanded: true,
+                                icon: Icon(
+                                  Icons.arrow_drop_down,
+                                  color: Colors.grey[400],
+                                  size: 20,
+                                ),
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 12,
+                                ),
+                                items: _sections.map((section) {
+                                  return DropdownMenuItem(
+                                    value: section['id'],
+                                    child: Text(
+                                      section['name']!,
+                                      style: const TextStyle(fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedSection = value;
+                                  });
+                                  _loadAllItems();
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      
+                      // Botão limpar filtros
+                      if (_searchQuery.isNotEmpty || 
+                          _selectedSupplier != 'Todos' || 
+                          (_userRole == 'ADMIN' && _selectedSection != '')) ...[
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _searchController.clear();
+                              _selectedSupplier = 'Todos';
+                              _selectedSection = '';
+                              _searchQuery = '';
+                            });
+                            _loadAllItems();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.clear_all,
+                              color: Colors.red[600],
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),

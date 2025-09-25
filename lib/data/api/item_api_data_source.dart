@@ -77,20 +77,23 @@ class ItemApiDataSource {
   Future<List<Map<String, dynamic>>> getItems( {String? sectionId, String? userRole}) async {
     try {
       Map<String, String> queryParams = {};
-      
-      // Se não for ADMIN, adiciona sectionId obrigatório (se não estiver vazio)
+
       if (userRole != 'ADMIN' && sectionId != null && sectionId.isNotEmpty) {
         queryParams['sectionId'] = sectionId;
+        print('[ItemApiDataSource] Usuário $userRole - filtrando por sectionId: $sectionId');
       }
-      // Se for ADMIN e especificar uma seção, adiciona sectionId
+
       else if (userRole == 'ADMIN' && sectionId != null && sectionId.isNotEmpty) {
         queryParams['sectionId'] = sectionId;
+        print('[ItemApiDataSource] ADMIN - filtrando por seção específica: $sectionId');
+      }
+      else if (userRole == 'ADMIN') {
+        print('[ItemApiDataSource] ADMIN - buscando todos os itens (sem filtro de seção)');
       }
       
       print('[ItemApiDataSource] Role: $userRole, SectionId: $sectionId');
       print('[ItemApiDataSource] Query params: $queryParams');
       
-      // Fazer a requisição com token manual no header
       final response = await _apiService.get('/items', queryParameters: queryParams);
 
       print('[ItemApiDataSource] Status Code: ${response.statusCode}');
@@ -135,7 +138,6 @@ class ItemApiDataSource {
     }
   }
 
-  // Busca detalhes de um item por ID
   Future<Map<String, dynamic>> getItemById(String id) async {
     try {
       final response = await _apiService.get('/items/$id');
