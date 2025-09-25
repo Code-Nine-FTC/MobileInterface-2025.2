@@ -46,10 +46,21 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
 
       final user = await _storageService.getUser();
       final userRole = user?.role;
-
+      
       print('[ListSupplierPage] Carregando fornecedores para role: $userRole');
 
+      int? sectionId;
+      if (userRole != 'ADMIN') {
+        final prefs = await SharedPreferences.getInstance();
+        final sessionId = prefs.getString('session_id');
+        if (sessionId != null && sessionId.isNotEmpty) {
+          sectionId = int.tryParse(sessionId);
+        }
+        print('[ListSupplierPage] SectionId para role $userRole: $sectionId');
+      }
+
       final suppliers = await _supplierApi.getSuppliers(
+        sectionId: sectionId,
         userRole: userRole,
       );
 
@@ -505,7 +516,6 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
                             ],
                           ),
                         ],
-                        // Última atualização se existir
                         if (supplier['lastUpdate'] != null || supplier['updatedAt'] != null) ...[
                           const SizedBox(height: 4),
                           Row(
@@ -534,7 +544,6 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
                       ],
                     ),
                   ),
-                  // Seta indicando que é clicável
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(

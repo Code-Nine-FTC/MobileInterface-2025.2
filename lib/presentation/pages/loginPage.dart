@@ -99,7 +99,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         case 'ADMIN':
           Navigator.pushReplacementNamed(context, '/admin_menu');
           break;
-        default:
+        case 'MANAGER':
+          Navigator.pushReplacementNamed(context, '/menu');
+          break;
+        case 'ASSISTANT':
           Navigator.pushReplacementNamed(context, '/menu');
           break;
       }

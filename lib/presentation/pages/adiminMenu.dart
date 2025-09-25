@@ -145,19 +145,6 @@ Widget build(BuildContext context) {
               ),
             ],
           ),
-
-          const SizedBox(height: 16),
-          _buildSectionHeader('Administração', Icons.admin_panel_settings_rounded),
-          const SizedBox(height: 16),
-
-          _buildFullWidthCard(
-            icon: Icons.groups_rounded,
-            label: 'Gestão de Usuários',
-            description: 'Administrar perfis e permissões',
-            color: Colors.indigo,
-            onTap: () => Navigator.pushNamed(context, '/user_management'),
-          ),
-
         ],
       ),
     ),

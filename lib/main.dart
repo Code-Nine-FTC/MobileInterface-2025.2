@@ -16,6 +16,8 @@ import 'presentation/pages/supplier/supplier_details_page.dart';
 import 'presentation/pages/user/user_profile.dart';
 import 'presentation/pages/adiminMenu.dart';
 import 'presentation/pages/user/select_user_menu.dart';
+import 'presentation/pages/order/order_form_page.dart';
+import 'presentation/pages/order/order_detail_page.dart';
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() {
@@ -96,8 +98,29 @@ class MyApp extends StatelessWidget {
             case '/user_profile':
               builder = (context) => const UserProfile();
               break;
+             case '/order_form':
+              builder = (context) => OrderFormPage();
+              break;
+            case '/order_detail':
+              // Aceita tanto String quanto int como argumento
+              final arg = settings.arguments;
+              int? orderId;
+              if (arg is int) {
+                orderId = arg;
+              } else if (arg is String) {
+                orderId = int.tryParse(arg);
+              } else if (arg is Map && arg['orderId'] != null) {
+                orderId = arg['orderId'] is int ? arg['orderId'] : int.tryParse(arg['orderId'].toString());
+              }
+              if (orderId != null) {
+                builder = (context) => OrderDetailPage(orderId: orderId!);
+              } else {
+                builder = (context) => const OrderManagementPage();
+              }
+              break;
             default:
               builder = (context) => const MenuPage();
+              break;
           }
           return PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
