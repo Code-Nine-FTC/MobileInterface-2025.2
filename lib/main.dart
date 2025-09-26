@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'presentation/pages/loginPage.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/pages/menu.dart';
-import 'presentation/pages/user/registrationPage.dart';
+import 'presentation/pages/products/registrationPage.dart';
 import 'presentation/pages/user/user_management_page.dart';
 import 'presentation/pages/order/order_management_page.dart';
 import 'presentation/pages/user/assistants_list_page.dart';
@@ -56,7 +56,7 @@ class MyApp extends StatelessWidget {
             case '/select_user_menu':
               builder = (context) => const SelectUserMenu();
               break;
-            case '/product_register':
+            case '/register_product':
               builder = (context) => const RegistrationPage();
               break;
             case '/user_management':
@@ -146,21 +146,6 @@ class MyApp extends StatelessWidget {
                 },
             settings: settings,
           );
-        },
-        routes: {
-          '/login': (context) => const LoginPage(),
-          '/menu': (context) => const MenuPage(),
-          '/registration': (context) => const RegistrationPage(),
-          '/user_management': (context) => const UserManagementPage(),
-          '/order_management': (context) => const OrderManagementPage(),
-          '/assistants': (context) => const AssistantsListPage(),
-          '/managers': (context) => const ManagersListPage(),
-          '/stock': (context) => const StockListPage(),
-          '/user_register': (context) => UserRegisterPage(),
-          '/supplier_register': (context) => const RegistrationSupplierPage(),
-          '/supplier_management': (context) => const ListSupplierPage(),
-          '/user_profile': (context) => const UserProfile(),
-          "/changePassword": (context) => const ChangePassword(),
         },
       ),
     );

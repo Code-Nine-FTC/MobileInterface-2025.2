@@ -17,6 +17,7 @@ class ChangePassword extends StatefulWidget {
 }
 
 class _ChangePasswordState extends State<ChangePassword> {
+
   late final ProfileService _profileService;
   final authRepository = AuthRepositoryImpl(
     apiDataSource: AuthApiDataSource(),
@@ -48,27 +49,19 @@ class _ChangePasswordState extends State<ChangePassword> {
       print('Erro ao carregar usuário: $e');
     }
   }
-    void _onNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/menu');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/user_profile');
-        break;
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
     return StandardScreen(
       title: 'Atualizar Senha',
-      bottomNavigationBar: CustomNavbar(
+            bottomNavigationBar: CustomNavbar(
         currentIndex: _selectedIndex,
-        onTap: _onNavTap,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
       child: _user == null
           ? const Center(

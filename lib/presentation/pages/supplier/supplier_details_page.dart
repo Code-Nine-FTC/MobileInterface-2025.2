@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/api/supplier_api_data_source.dart';
 import '../../components/standartScreen.dart';
+import '../../components/navBar.dart';
 
 class SupplierDetailsPage extends StatefulWidget {
   final String supplierId;
-  
-  const SupplierDetailsPage({
-    super.key,
-    required this.supplierId,
-  });
+
+  const SupplierDetailsPage({super.key, required this.supplierId});
 
   @override
   State<SupplierDetailsPage> createState() => _SupplierDetailsPageState();
@@ -20,6 +18,7 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
   Map<String, dynamic>? _supplier;
   bool _isLoading = true;
   String? _error;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -35,7 +34,7 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
       });
 
       final supplier = await _supplierApi.getSupplierById(widget.supplierId);
-      
+
       setState(() {
         _supplier = supplier;
         _isLoading = false;
@@ -52,6 +51,14 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
+      bottomNavigationBar: CustomNavbar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
       body: StandardScreen(
         title: 'Detalhes do Fornecedor',
         child: _isLoading
@@ -61,146 +68,166 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
-                    Text('Carregando detalhes...', style: TextStyle(color: Colors.grey)),
+                    Text(
+                      'Carregando detalhes...',
+                      style: TextStyle(color: Colors.grey),
+                    ),
                   ],
                 ),
               )
             : _error != null
-                ? Center(
-                    child: Container(
-                      margin: const EdgeInsets.all(24),
+            ? Center(
+                child: Container(
+                  margin: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        child: const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 48,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Ops! Algo deu errado',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Erro ao carregar: $_error',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        onPressed: _loadSupplierDetails,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Tentar novamente'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryLight,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : _supplier == null
+            ? Center(
+                child: Container(
+                  margin: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        child: const Icon(
+                          Icons.search_off,
+                          color: Colors.orange,
+                          size: 48,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Fornecedor não encontrado',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'O fornecedor que você procura não existe ou foi removido.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header com ícone e informações principais
+                    Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primaryLight.withOpacity(0.8),
+                            AppColors.primaryLight,
+                          ],
+                        ),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.red.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            color: AppColors.primaryLight.withOpacity(0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(50),
-                            ),
-                            child: const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Ops! Algo deu errado',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Erro ao carregar: $_error',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton.icon(
-                            onPressed: _loadSupplierDetails,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Tentar novamente'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryLight,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: _buildSupplierHeader(),
                     ),
-                  )
-                : _supplier == null
-                    ? Center(
-                        child: Container(
-                          margin: const EdgeInsets.all(24),
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(50),
-                                ),
-                                child: const Icon(Icons.search_off, color: Colors.orange, size: 48),
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Fornecedor não encontrado',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'O fornecedor que você procura não existe ou foi removido.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.grey[600]),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Header com ícone e informações principais
-                            Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    AppColors.primaryLight.withOpacity(0.8),
-                                    AppColors.primaryLight,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primaryLight.withOpacity(0.3),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: _buildSupplierHeader(),
-                            ),
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Cards de informações
-                            _buildInfoCards(),
-                            
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                      ),
+
+                    const SizedBox(height: 24),
+
+                    // Cards de informações
+                    _buildInfoCards(),
+
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -220,11 +247,7 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
                 color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(
-                Icons.business,
-                color: Colors.white,
-                size: 40,
-              ),
+              child: const Icon(Icons.business, color: Colors.white, size: 40),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -298,32 +321,28 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: 20,
-                      ),
+                      Icon(Icons.star, color: Colors.amber, size: 20),
                       const SizedBox(width: 4),
                       Text(
                         rating.toStringAsFixed(1),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Avaliação',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 12,
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Avaliação',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 12,
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -333,7 +352,7 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
 
   Widget _buildInfoCards() {
     final supplier = _supplier!;
-    
+
     return Column(
       children: [
         // Card de Informações de Contato
@@ -363,30 +382,28 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
                   const SizedBox(width: 12),
                   const Text(
                     'Informações de Contato',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               if (supplier['email'] != null)
                 _buildInfoItem(
                   icon: Icons.email,
                   label: 'Email',
                   value: supplier['email'],
                 ),
-              
+
               if (supplier['phone'] != null)
                 _buildInfoItem(
                   icon: Icons.phone,
                   label: 'Telefone',
                   value: supplier['phone'],
                 ),
-              
-              if (supplier['url'] != null && supplier['url'].toString().isNotEmpty)
+
+              if (supplier['url'] != null &&
+                  supplier['url'].toString().isNotEmpty)
                 _buildInfoItem(
                   icon: Icons.web,
                   label: 'Website',
@@ -395,9 +412,9 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Card de Informações Adicionais
         Container(
           padding: const EdgeInsets.all(20),
@@ -425,30 +442,23 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
                   const SizedBox(width: 12),
                   const Text(
                     'Informações Adicionais',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              
-              if (supplier['classification'] != null || supplier['category'] != null)
+
+              if (supplier['classification'] != null ||
+                  supplier['category'] != null)
                 _buildInfoItem(
                   icon: Icons.category,
                   label: 'Classificação',
-                  value: supplier['classification'] ?? supplier['category'] ?? 'Não informado',
+                  value:
+                      supplier['classification'] ??
+                      supplier['category'] ??
+                      'Não informado',
                 ),
-              
-              _buildInfoItem(
-                icon: Icons.access_time,
-                label: 'Data de Cadastro',
-                value: supplier['createdAt'] != null
-                    ? _formatDate(supplier['createdAt'])
-                    : 'Não informado',
-              ),
-              
+
               _buildInfoItem(
                 icon: Icons.update,
                 label: 'Última Atualização',
@@ -479,11 +489,7 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
               color: Colors.grey.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: Colors.grey[600],
-              size: 18,
-            ),
+            child: Icon(icon, color: Colors.grey[600], size: 18),
           ),
           const SizedBox(width: 16),
           Expanded(

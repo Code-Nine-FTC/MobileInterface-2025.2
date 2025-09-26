@@ -8,7 +8,6 @@ import '../../components/standartScreen.dart';
 import '../../components/navbar.dart';
 import 'package:flutter/material.dart';
 
-
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
 
@@ -17,17 +16,18 @@ class UserProfile extends StatefulWidget {
 }
 
 class _UserProfileState extends State<UserProfile> {
-  late final ProfileService _profileService;
-  final authRepository = AuthRepositoryImpl(
-    apiDataSource: AuthApiDataSource(),
-    storageService: SecureStorageService(),
+  final ProfileService _profileService = ProfileService(
+    AuthRepositoryImpl(
+      apiDataSource: AuthApiDataSource(),
+      storageService: SecureStorageService(),
+    ),
   );
+  int _selectedIndex = 1;
   User? _user;
-  int _selectedIndex = 0;
+
   @override
   void initState() {
     super.initState();
-    _profileService = ProfileService(authRepository);
     _loadUser();
   }
 
@@ -44,28 +44,19 @@ class _UserProfileState extends State<UserProfile> {
       print('Erro ao carregar usuário: $e');
     }
   }
-    void _onNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/menu');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/user_profile');
-        break;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return StandardScreen(
       title: 'Meu Perfil',
-       showBackButton: false,
+      showBackButton: false,
       bottomNavigationBar: CustomNavbar(
         currentIndex: _selectedIndex,
-        onTap: _onNavTap,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
       child: _user == null
           ? const Center(
@@ -78,10 +69,7 @@ class _UserProfileState extends State<UserProfile> {
                   SizedBox(height: 16),
                   Text(
                     'Carregando perfil...',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
                   ),
                 ],
               ),
@@ -91,10 +79,12 @@ class _UserProfileState extends State<UserProfile> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  
                   // Nome do usuário
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.grey[50],
                       borderRadius: BorderRadius.circular(20),
@@ -102,25 +92,26 @@ class _UserProfileState extends State<UserProfile> {
                     ),
                     child: Text(
                       _user!.name,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue[800],
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[800],
+                          ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   // Email do usuário
                   Text(
                     _user!.email,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   ),
-                  
+
                   const SizedBox(height: 40),
-                  
+
                   // Cards de ações
                   _buildActionCard(
                     icon: Icons.lock_outline,
@@ -129,9 +120,9 @@ class _UserProfileState extends State<UserProfile> {
                     color: Colors.blue,
                     onTap: () => _profileService.changePassword(context),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // adicionar futuramente
                   // _buildActionCard(
                   //   icon: Icons.settings_outlined,
@@ -140,9 +131,8 @@ class _UserProfileState extends State<UserProfile> {
                   //   color: Colors.green,
                   //   onTap: () => _profileService.openSettings(context),
                   // ),
-                  
+
                   // const SizedBox(height: 16),
-                  
                   _buildActionCard(
                     icon: Icons.exit_to_app,
                     title: 'Sair do App',
@@ -167,9 +157,7 @@ class _UserProfileState extends State<UserProfile> {
   }) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: InkWell(
         borderRadius: BorderRadius.circular(15),
         onTap: onTap,
@@ -184,15 +172,11 @@ class _UserProfileState extends State<UserProfile> {
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
+                child: Icon(icon, color: color, size: 24),
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,20 +192,13 @@ class _UserProfileState extends State<UserProfile> {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     ),
                   ],
                 ),
               ),
-              
-              Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.grey[400],
-                size: 16,
-              ),
+
+              Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
             ],
           ),
         ),

@@ -46,7 +46,7 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
 
       final user = await _storageService.getUser();
       final userRole = user?.role;
-      
+
       print('[ListSupplierPage] Carregando fornecedores para role: $userRole');
 
       int? sectionId;
@@ -88,27 +88,13 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
         final cnpj = (supplier['cnpj'] ?? '').toString().toLowerCase();
         final email = (supplier['email'] ?? '').toString().toLowerCase();
         final phone = (supplier['phone'] ?? '').toString().toLowerCase();
-        
+
         return name.contains(query) ||
-               cnpj.contains(query) ||
-               email.contains(query) ||
-               phone.contains(query);
+            cnpj.contains(query) ||
+            email.contains(query) ||
+            phone.contains(query);
       }).toList();
     });
-  }
-
-  void _onNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/menu');
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/user_profile');
-        break;
-    }
   }
 
   @override
@@ -117,162 +103,164 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
       backgroundColor: Colors.transparent,
       bottomNavigationBar: CustomNavbar(
         currentIndex: _selectedIndex,
-        onTap: _onNavTap,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
       body: StandardScreen(
-      title: 'Gerenciar Fornecedores',
-      showBackButton: true,
-      child: Column(
-        children: [
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 0,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // Ícone de filtro
-                Icon(
-                  Icons.filter_list,
-                  color: AppColors.primaryLight,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                
-                // Campo de pesquisa compacto
-                Expanded(
-                  child: Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: _searchController.text.isNotEmpty 
-                            ? AppColors.primaryLight.withOpacity(0.3)
-                            : Colors.grey[300]!,
-                        width: 1,
+        title: 'Gerenciar Fornecedores',
+        showBackButton: true,
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 0,
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Ícone de filtro
+                  Icon(
+                    Icons.filter_list,
+                    color: AppColors.primaryLight,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Campo de pesquisa compacto
+                  Expanded(
+                    child: Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _searchController.text.isNotEmpty
+                              ? AppColors.primaryLight.withOpacity(0.3)
+                              : Colors.grey[300]!,
+                          width: 1,
+                        ),
                       ),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Buscar fornecedores...',
-                        hintStyle: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 14,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Colors.grey[400],
-                          size: 18,
-                        ),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? GestureDetector(
-                                onTap: () => _searchController.clear(),
-                                child: Icon(
-                                  Icons.clear,
-                                  color: Colors.grey[400],
-                                  size: 16,
-                                ),
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, 
-                          vertical: 10,
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Buscar fornecedores...',
+                          hintStyle: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 14,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Colors.grey[400],
+                            size: 18,
+                          ),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? GestureDetector(
+                                  onTap: () => _searchController.clear(),
+                                  child: Icon(
+                                    Icons.clear,
+                                    color: Colors.grey[400],
+                                    size: 16,
+                                  ),
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          
-          // Content
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 64,
-                              color: Colors.red[300],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Erro ao carregar fornecedores',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _error!,
-                              style: TextStyle(
-                                color: Colors.red[600],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _loadSuppliers,
-                              child: const Text('Tentar Novamente'),
-                            ),
-                          ],
-                        ),
-                      )
-                    : _filteredSuppliers.isEmpty
-                        ? const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.business_outlined,
-                                  size: 64,
-                                  color: Colors.grey,
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Nenhum fornecedor encontrado',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _loadSuppliers,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                              itemCount: _filteredSuppliers.length,
-                              itemBuilder: (context, index) {
-                                final supplier = _filteredSuppliers[index];
-                                return _buildSupplierItem(supplier);
-                              },
+
+            // Content
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.red[300],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Erro ao carregar fornecedores',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[700],
                             ),
                           ),
-          ),
-        ],
-      ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _error!,
+                            style: TextStyle(color: Colors.red[600]),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _loadSuppliers,
+                            child: const Text('Tentar Novamente'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _filteredSuppliers.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.business_outlined,
+                            size: 64,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Nenhum fornecedor encontrado',
+                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadSuppliers,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 16,
+                        ),
+                        itemCount: _filteredSuppliers.length,
+                        itemBuilder: (context, index) {
+                          final supplier = _filteredSuppliers[index];
+                          return _buildSupplierItem(supplier);
+                        },
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -280,7 +268,7 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
   Widget _buildSupplierItem(Map<String, dynamic> supplier) {
     final isActive = supplier['isActive'] ?? true;
     final rating = supplier['rating'] ?? 0;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Container(
@@ -288,10 +276,7 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.white,
-              Colors.grey[50]!,
-            ],
+            colors: [Colors.white, Colors.grey[50]!],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
@@ -301,10 +286,7 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
               offset: const Offset(0, 6),
             ),
           ],
-          border: Border.all(
-            color: Colors.grey.withOpacity(0.1),
-            width: 1,
-          ),
+          border: Border.all(color: Colors.grey.withOpacity(0.1), width: 1),
         ),
         child: Material(
           color: Colors.transparent,
@@ -330,18 +312,15 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
                           isActive
                               ? AppColors.primaryLight.withOpacity(0.8)
                               : Colors.red.withOpacity(0.8),
-                          isActive
-                              ? AppColors.primaryLight
-                              : Colors.red,
+                          isActive ? AppColors.primaryLight : Colors.red,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: (isActive
-                                  ? AppColors.primaryLight
-                                  : Colors.red)
-                              .withOpacity(0.3),
+                          color:
+                              (isActive ? AppColors.primaryLight : Colors.red)
+                                  .withOpacity(0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -389,7 +368,9 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    isActive ? Icons.check_circle : Icons.cancel,
+                                    isActive
+                                        ? Icons.check_circle
+                                        : Icons.cancel,
                                     size: 14,
                                     color: isActive ? Colors.green : Colors.red,
                                   ),
@@ -399,7 +380,9 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: isActive ? Colors.green : Colors.red,
+                                      color: isActive
+                                          ? Colors.green
+                                          : Colors.red,
                                     ),
                                   ),
                                 ],
@@ -439,7 +422,8 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
                           ],
                         ),
                         // Classificação do fornecedor se existir
-                        if (supplier['classification'] != null || supplier['category'] != null) ...[
+                        if (supplier['classification'] != null ||
+                            supplier['category'] != null) ...[
                           const SizedBox(height: 8),
                           Row(
                             children: [
@@ -516,7 +500,8 @@ class _ListSupplierPageState extends State<ListSupplierPage> {
                             ],
                           ),
                         ],
-                        if (supplier['lastUpdate'] != null || supplier['updatedAt'] != null) ...[
+                        if (supplier['lastUpdate'] != null ||
+                            supplier['updatedAt'] != null) ...[
                           const SizedBox(height: 4),
                           Row(
                             children: [
