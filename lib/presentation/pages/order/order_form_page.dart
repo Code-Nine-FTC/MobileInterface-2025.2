@@ -792,7 +792,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  'Opcional',
+                                  'Selecione',
                                   style: TextStyle(
                                     color: Colors.blue[700],
                                     fontSize: 12,

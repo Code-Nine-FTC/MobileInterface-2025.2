@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../components/standartScreen.dart';
 import '../components/navBar.dart';
 import '../../core/theme/app_colors.dart';
-import '../../../core/utils/secure_storage_service.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
@@ -12,45 +11,7 @@ class MenuPage extends StatefulWidget {
 }
 
 class _MenuPageState extends State<MenuPage> {
-  String? _userRole;
-  final SecureStorageService _storageService = SecureStorageService();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserRole();
-  }
-
-  Future<void> _loadUserRole() async {
-    final prefs = await _storageService.getUser();
-    final role = prefs?.role;
-    setState(() {
-      _userRole = role;
-    });
-    print('[Menu] Role do usuário: $role');
-    if (role == 'ADMIN' && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacementNamed(context, '/admin_menu');
-      });
-    }
-  }
-
   int _selectedIndex = 0;
-
-  void _onNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/menu');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/user_profile');
-        break;
-    }
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +20,11 @@ class _MenuPageState extends State<MenuPage> {
       showBackButton: false,
       bottomNavigationBar: CustomNavbar(
         currentIndex: _selectedIndex,
-        onTap: _onNavTap,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -130,7 +95,7 @@ class _MenuPageState extends State<MenuPage> {
             ),
             _buildSectionHeader('Ações Principais', Icons.star_rounded),
             const SizedBox(height: 16),
-            
+
             Row(
               children: [
                 Expanded(
@@ -139,7 +104,7 @@ class _MenuPageState extends State<MenuPage> {
                     label: 'Cadastrar',
                     description: 'Novos produtos',
                     color: Colors.green,
-                    onTap: () => Navigator.pushNamed(context, '/registration'),
+                    onTap: () => Navigator.pushNamed(context, '/register_product'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -154,9 +119,9 @@ class _MenuPageState extends State<MenuPage> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             Row(
               children: [
                 Expanded(
@@ -165,7 +130,8 @@ class _MenuPageState extends State<MenuPage> {
                     label: 'Pedidos',
                     description: 'Acompanhar status',
                     color: Colors.orange,
-                    onTap: () => Navigator.pushNamed(context, '/order_management'),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/order_management'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -186,11 +152,7 @@ class _MenuPageState extends State<MenuPage> {
             color: AppColors.infoLight.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: AppColors.infoLight,
-            size: 20,
-          ),
+          child: Icon(icon, color: AppColors.infoLight, size: 20),
         ),
         const SizedBox(width: 12),
         Text(
@@ -218,10 +180,7 @@ class _MenuPageState extends State<MenuPage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            color.withValues(alpha: 0.05),
-          ],
+          colors: [Colors.white, color.withValues(alpha: 0.05)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -231,10 +190,7 @@ class _MenuPageState extends State<MenuPage> {
             offset: const Offset(0, 6),
           ),
         ],
-        border: Border.all(
-          color: color.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.1), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -252,10 +208,7 @@ class _MenuPageState extends State<MenuPage> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        color.withValues(alpha: 0.8),
-                        color,
-                      ],
+                      colors: [color.withValues(alpha: 0.8), color],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
@@ -266,11 +219,7 @@ class _MenuPageState extends State<MenuPage> {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: Colors.white, size: 24),
                 ),
                 const Spacer(),
                 Text(
@@ -284,10 +233,7 @@ class _MenuPageState extends State<MenuPage> {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),

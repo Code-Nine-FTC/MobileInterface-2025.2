@@ -292,19 +292,7 @@ class _StockListPageState extends State<StockListPage> {
     await _loadAllItems();
   }
 
-  void _onNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/menu');
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/perfil');
-        break;
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +309,11 @@ class _StockListPageState extends State<StockListPage> {
       backgroundColor: Colors.transparent,
       bottomNavigationBar: CustomNavbar(
         currentIndex: _selectedIndex,
-        onTap: _onNavTap,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
       body: StandardScreen(
         title: 'Estoque',

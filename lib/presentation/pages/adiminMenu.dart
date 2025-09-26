@@ -13,143 +13,135 @@ class AdiminMenuPage extends StatefulWidget {
 class _AdiminMenuPageState extends State<AdiminMenuPage> {
   int _selectedIndex = 0;
 
-  void _onNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/menu');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/user_profile');
-        break;
-    }
-  }
-
-@override
-Widget build(BuildContext context) {
-  return StandardScreen(
-    title: 'Menu Principal',
-    showBackButton: false,
-    bottomNavigationBar: CustomNavbar(
-      currentIndex: _selectedIndex,
-      onTap: _onNavTap,
-    ),
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            margin: const EdgeInsets.only(bottom: 24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.infoLight.withValues(alpha: 0.8),
-                  AppColors.infoLight,
+  @override
+  Widget build(BuildContext context) {
+    return StandardScreen(
+      title: 'Menu Principal',
+      showBackButton: false,
+      bottomNavigationBar: CustomNavbar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.infoLight.withValues(alpha: 0.8),
+                    AppColors.infoLight,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.infoLight.withValues(alpha: 0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.infoLight.withValues(alpha: 0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.dashboard_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Bem-vindo!',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'O que você gostaria de fazer hoje?',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Row(
+            _buildSectionHeader('Ações Principais', Icons.star_rounded),
+            const SizedBox(height: 16),
+            Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.dashboard_rounded,
-                    color: Colors.white,
-                    size: 32,
+                Expanded(
+                  child: _buildModernCard(
+                    icon: Icons.list_alt_rounded,
+                    label: 'Pedidos',
+                    description: 'Acompanhar status',
+                    color: Colors.orange,
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/order_management'),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Bem-vindo!',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        'O que você gostaria de fazer hoje?',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ],
+                  child: _buildModernCard(
+                    icon: Icons.inventory_2_rounded,
+                    label: 'Estoque',
+                    description: 'Gerenciar produtos',
+                    color: AppColors.infoLight,
+                    onTap: () => Navigator.pushNamed(context, '/stock'),
                   ),
                 ),
               ],
             ),
-          ),
-          _buildSectionHeader('Ações Principais', Icons.star_rounded),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildModernCard(
-                  icon: Icons.list_alt_rounded,
-                  label: 'Pedidos',
-                  description: 'Acompanhar status',
-                  color: Colors.orange,
-                  onTap: () => Navigator.pushNamed(context, '/user_menu'),
+
+            const SizedBox(height: 12),
+
+            Row(
+              children: [
+                const SizedBox(width: 0),
+                Expanded(
+                  child: _buildModernCard(
+                    icon: Icons.local_shipping_rounded,
+                    label: 'Fornecedores',
+                    description: 'Gestão de parceiros',
+                    color: Colors.purple,
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/supplier_management'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildModernCard(
-                  icon: Icons.inventory_2_rounded,
-                  label: 'Estoque',
-                  description: 'Gerenciar produtos',
-                  color: AppColors.infoLight,
-                  onTap: () => Navigator.pushNamed(context, '/stock'),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 12),
-          
-          Row(
-            children: [
-              const SizedBox(width: 0),
-              Expanded(
-                child: _buildModernCard(
-                  icon: Icons.local_shipping_rounded,
-                  label: 'Fornecedores',
-                  description: 'Gestão de parceiros',
-                  color: Colors.purple,
-                  onTap: () => Navigator.pushNamed(context, '/supplier_management'),
-                ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
@@ -160,11 +152,7 @@ Widget build(BuildContext context) {
             color: AppColors.infoLight.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: AppColors.infoLight,
-            size: 20,
-          ),
+          child: Icon(icon, color: AppColors.infoLight, size: 20),
         ),
         const SizedBox(width: 12),
         Text(
@@ -192,10 +180,7 @@ Widget build(BuildContext context) {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            color.withValues(alpha: 0.05),
-          ],
+          colors: [Colors.white, color.withValues(alpha: 0.05)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -205,10 +190,7 @@ Widget build(BuildContext context) {
             offset: const Offset(0, 6),
           ),
         ],
-        border: Border.all(
-          color: color.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.1), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -226,10 +208,7 @@ Widget build(BuildContext context) {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        color.withValues(alpha: 0.8),
-                        color,
-                      ],
+                      colors: [color.withValues(alpha: 0.8), color],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
@@ -240,11 +219,7 @@ Widget build(BuildContext context) {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: Colors.white, size: 24),
                 ),
                 const Spacer(),
                 Text(
@@ -258,10 +233,7 @@ Widget build(BuildContext context) {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -286,10 +258,7 @@ Widget build(BuildContext context) {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            color.withValues(alpha: 0.05),
-          ],
+          colors: [Colors.white, color.withValues(alpha: 0.05)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -299,10 +268,7 @@ Widget build(BuildContext context) {
             offset: const Offset(0, 6),
           ),
         ],
-        border: Border.all(
-          color: color.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.1), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -319,10 +285,7 @@ Widget build(BuildContext context) {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        color.withValues(alpha: 0.8),
-                        color,
-                      ],
+                      colors: [color.withValues(alpha: 0.8), color],
                     ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
@@ -333,11 +296,7 @@ Widget build(BuildContext context) {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 28,
-                  ),
+                  child: Icon(icon, color: Colors.white, size: 28),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -355,10 +314,7 @@ Widget build(BuildContext context) {
                       const SizedBox(height: 4),
                       Text(
                         description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),

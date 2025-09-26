@@ -660,24 +660,6 @@ class ProductFormState extends State<ProductForm> {
                   _notifyChange(); 
                 },
               ),
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.person_add_rounded),
-                  label: const Text("Cadastrar novo fornecedor"),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.infoLight,
-                    side: BorderSide(color: AppColors.infoLight),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pushNamed('/supplier_register');
-                  },
-                ),
-              ),
 
               if (_loadError != null) ...[
                 Container(

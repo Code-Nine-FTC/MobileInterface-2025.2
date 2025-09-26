@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../domain/entities/order.dart';
 import '../../components/standartScreen.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../domain/entities/order.dart';
-import '../../components/standartScreen.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../data/api/order_api_data_source.dart';
 import '../../../data/api/item_api_data_source.dart';
 import '../../../data/api/supplier_api_data_source.dart';
+import '../../components/navBar.dart';
 
   class OrderDetailPage extends StatefulWidget {
     final int orderId;
@@ -18,6 +16,7 @@ import '../../../data/api/supplier_api_data_source.dart';
   }
 
   class _OrderDetailPageState extends State<OrderDetailPage> {
+    int _selectedIndex = 0;
     final OrderApiDataSource _orderApi = OrderApiDataSource();
     final ItemApiDataSource _itemApi = ItemApiDataSource();
     final SupplierApiDataSource _supplierApi = SupplierApiDataSource();
@@ -97,6 +96,14 @@ import '../../../data/api/supplier_api_data_source.dart';
     Widget build(BuildContext context) {
       return Scaffold(
         backgroundColor: Colors.transparent,
+              bottomNavigationBar: CustomNavbar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
         body: StandardScreen(
           title: _order != null ? 'Pedido #${_order!.id}' : 'Detalhes do Pedido',
           child: _isLoading
@@ -224,26 +231,6 @@ import '../../../data/api/supplier_api_data_source.dart';
                               // Cards de informações
                               _buildInfoCards(),
                               const SizedBox(height: 24),
-                              Center(
-                                child: ElevatedButton.icon(
-                                  icon: const Icon(Icons.edit, color: Colors.white),
-                                  label: const Text('Editar Pedido'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.infoLight,
-                                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => OrderDetailPage(orderId: _order!.id),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
                             ],
                           ),
                         ),

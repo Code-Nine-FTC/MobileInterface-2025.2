@@ -35,22 +35,7 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
     super.dispose();
   }
 
-  void _onNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/menu');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/home');
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/perfil');
-        break;
-    }
-  }
+ 
 
   void _onSearchChanged() {
     setState(() {
@@ -140,15 +125,18 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
         backgroundColor: AppColors.infoLight,
       ),
       backgroundColor: Colors.transparent,
-      bottomNavigationBar: CustomNavbar(
+            bottomNavigationBar: CustomNavbar(
         currentIndex: _selectedIndex,
-        onTap: _onNavTap,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
       body: StandardScreen(
         title: 'Gestão de Pedidos',
         child: Column(
           children: [
-            // Filtros Compactos
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
