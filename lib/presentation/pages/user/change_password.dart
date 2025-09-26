@@ -66,7 +66,6 @@ class _ChangePasswordState extends State<ChangePassword> {
   Widget build(BuildContext context) {
     return StandardScreen(
       title: 'Atualizar Senha',
-      showBackButton: false,
       bottomNavigationBar: CustomNavbar(
         currentIndex: _selectedIndex,
         onTap: _onNavTap,

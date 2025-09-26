@@ -113,7 +113,7 @@ Widget build(BuildContext context) {
                   label: 'Pedidos',
                   description: 'Acompanhar status',
                   color: Colors.orange,
-                  onTap: () => Navigator.pushNamed(context, '/user_menu'),
+                  onTap: () => Navigator.pushNamed(context, '/order_management'),
                 ),
               ),
               const SizedBox(width: 12),

@@ -44,10 +44,7 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
         Navigator.pushReplacementNamed(context, '/menu');
         break;
       case 1:
-        Navigator.pushReplacementNamed(context, '/home');
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/perfil');
+        Navigator.pushReplacementNamed(context, '/user_profile');
         break;
     }
   }

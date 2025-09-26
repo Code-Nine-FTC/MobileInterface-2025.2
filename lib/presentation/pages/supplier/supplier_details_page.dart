@@ -452,8 +452,8 @@ class _SupplierDetailsPageState extends State<SupplierDetailsPage> {
               _buildInfoItem(
                 icon: Icons.update,
                 label: 'Última Atualização',
-                value: supplier['updatedAt'] != null
-                    ? _formatDate(supplier['updatedAt'])
+                value: supplier['lastUpdate'] != null
+                    ? _formatDate(supplier['lastUpdate'])
                     : 'Não informado',
               ),
             ],
