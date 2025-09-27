@@ -20,6 +20,71 @@ import '../../components/navBar.dart';
   }
 
   class _OrderDetailPageState extends State<OrderDetailPage> {
+  // Opções de status para o pedido
+  List<Map<String, dynamic>> get statusOptions => [
+    {
+      'label': 'Pendente',
+      'value': 'PENDING',
+      'icon': Icons.hourglass_empty,
+      'color': Colors.orange,
+    },
+    {
+      'label': 'Aprovado',
+      'value': 'APPROVED',
+      'icon': Icons.check_circle,
+      'color': Colors.blue,
+    },
+    {
+      'label': 'Cancelado',
+      'value': 'CANCELED',
+      'icon': Icons.cancel,
+      'color': Colors.red,
+    },
+    {
+      'label': 'Completo',
+      'value': 'COMPLETED',
+      'icon': Icons.done_all,
+      'color': Colors.green,
+    },
+  ];
+
+  // Dialog para editar status do pedido
+  Future<void> _showEditStatusDialog() async {
+    if (_order == null) return;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Editar Status do Pedido'),
+        children: [
+          ...statusOptions.map((opt) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, opt['value'] as String),
+                child: Row(
+                  children: [
+                    Icon(opt['icon'] as IconData, color: opt['color'] as Color),
+                    const SizedBox(width: 12),
+                    Text(
+                      opt['label'] as String,
+                      style: TextStyle(
+                        color: opt['color'] as Color,
+                        fontWeight: _order!.status == opt['value'] ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 16,
+                      ),
+                    ),
+                    if (_order!.status == opt['value'])
+                      const Padding(
+                        padding: EdgeInsets.only(left: 8),
+                        child: Icon(Icons.check, color: Colors.green, size: 18),
+                      ),
+                  ],
+                ),
+              ))
+        ],
+      ),
+    );
+    if (result != null && result != _order!.status) {
+      await _updateOrderStatus(result);
+    }
+  }
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
@@ -51,7 +116,7 @@ import '../../components/navBar.dart';
 
   Future<void> _showEditItemsDialog() async {
     if (_order == null) return;
-    // Carrega todos os itens disponíveis do sistema (igual ao cadastro)
+    // Carrega todos os itens disponíveis do backend
     final storage = SecureStorageService();
     final user = await storage.getUser();
     final itemApi = ItemApiDataSource();
@@ -61,20 +126,56 @@ import '../../components/navBar.dart';
     } else {
       effectiveSectionId = user?.sessionId;
     }
-    final allItems = await itemApi.getItems(sectionId: effectiveSectionId, userRole: user?.role);
-    // Mapeia nomes e ids
+    final itemsBackend = await itemApi.getItems(sectionId: effectiveSectionId, userRole: user?.role);
+    // Mapeia os nomes dos itens por itemId
     final Map<int, String> itemNames = {
-      for (var item in allItems)
-        (item['itemId'] ?? item['id']) is int
-          ? (item['itemId'] ?? item['id']) as int
-          : int.tryParse((item['itemId'] ?? item['id']).toString()) ?? -1:
-        (item['name']?.toString() ?? 'Item sem nome')
+      for (final item in itemsBackend)
+        int.tryParse(item['itemId']?.toString() ?? item['id']?.toString() ?? '') ?? 0: item['name'] as String
     };
-    final availableItems = itemNames.keys.where((id) => id != -1).toList();
-    // Inicializa mapa de quantidades reais dos itens do pedido
+    final availableItems = itemsBackend
+      .map((item) => int.tryParse(item['itemId']?.toString() ?? item['id']?.toString() ?? ''))
+      .whereType<int>()
+      .toList();
+
+    // Garante que todos os itens do pedido estejam presentes em availableItems e itemNames
+    // Usa sempre o itemId do catálogo para seleção
+    final pedidoIds = _orderItems
+        .where((item) => item.itemId != null)
+        .map((item) => item.itemId!);
+    for (final id in pedidoIds) {
+      if (!availableItems.contains(id)) {
+        availableItems.add(id);
+        final pedidoItem = _orderItems.firstWhere(
+          (item) => item.itemId == id,
+          orElse: () => OrderItemResponse(
+            id: 0,
+            itemId: id,
+            name: 'Item $id',
+            quantity: 1,
+            unit: null,
+            supplierName: null,
+          ),
+        );
+        itemNames[id] = pedidoItem.name;
+      }
+    }
+    // Debug: print IDs dos itens do pedido e dos disponíveis
+    print('DEBUG _orderItems itemIds:');
+    for (final item in _orderItems) {
+      print('  item.itemId=${item.itemId} (${item.itemId.runtimeType}), quantity=${item.quantity}');
+    }
+    print('DEBUG availableItems:');
+    for (final id in availableItems) {
+      print('  available id=$id (${id.runtimeType})');
+    }
+
+    // Inicializa o mapa de seleção com os itens do pedido já marcados
     Map<int, int> itemQuantities = {};
     for (final item in _orderItems) {
-      itemQuantities[item.id] = item.quantity;
+      final int? itemId = item.itemId;
+      if (itemId != null && item.quantity > 0 && availableItems.contains(itemId)) {
+        itemQuantities[itemId] = item.quantity;
+      }
     }
     final result = await showDialog<Map<int, int>>(
       context: context,
@@ -153,11 +254,13 @@ import '../../components/navBar.dart';
                                       );
                                     },
                                   );
-                                  if (qty != null && qty > 0) {
-                                    setDialogState(() {
+                                  setDialogState(() {
+                                    if (qty != null && qty > 0) {
                                       itemQuantities[id] = qty;
-                                    });
-                                  }
+                                    } else {
+                                      itemQuantities.remove(id);
+                                    }
+                                  });
                                 } else {
                                   setDialogState(() {
                                     itemQuantities.remove(id);
@@ -202,7 +305,7 @@ import '../../components/navBar.dart';
                         Expanded(
                           flex: 2,
                           child: ElevatedButton(
-                            onPressed: () => Navigator.pop(context, itemQuantities),
+                            onPressed: () => Navigator.pop(context, Map<int, int>.from(itemQuantities)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
@@ -229,10 +332,35 @@ import '../../components/navBar.dart';
   }
 
   Future<void> _updateOrderItems(Map<int, int> itemQuantities) async {
+    print('[DEBUG] Enviando itemQuantities (sem duplicidade): ${itemQuantities.keys.toList()}');
     try {
       setState(() => _isLoading = true);
-      // Envia atualização dos itens para o backend
-      final success = await _orderApi.updateOrderItems(_order!.id, itemQuantities);
+      // Busca os itemIds válidos do backend (itens disponíveis)
+      final itemApi = ItemApiDataSource();
+      final user = await SecureStorageService().getUser();
+      String? effectiveSectionId;
+      if (user?.role == 'ADMIN') {
+        effectiveSectionId = null;
+      } else {
+        effectiveSectionId = user?.sessionId;
+      }
+      final itemsBackend = await itemApi.getItems(sectionId: effectiveSectionId, userRole: user?.role);
+      final validIds = itemsBackend.map((item) => item['itemId'] ?? item['id']).whereType<int>().toSet();
+      // Não permite duplicidade: só envia cada itemId uma vez
+      final filteredItemQuantities = <int, int>{};
+      final alreadyInOrder = _orderItems.map((item) => item.itemId).toSet();
+      itemQuantities.forEach((id, qty) {
+        if (validIds.contains(id) && qty > 0) {
+          // Se já está no pedido, só atualiza a quantidade
+          // Se não está, adiciona normalmente
+          if (!filteredItemQuantities.containsKey(id)) {
+            filteredItemQuantities[id] = qty;
+          }
+        }
+      });
+      // Remove duplicados: se o usuário tentou marcar o mesmo item mais de uma vez, só mantém um registro
+      // (na prática, o dialog já impede, mas aqui é garantido)
+      final success = await _orderApi.updateOrderItems(_order!.id, filteredItemQuantities, _order!.withdrawDay);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Itens atualizados!')));
         await _loadOrderDetails();
@@ -244,16 +372,6 @@ import '../../components/navBar.dart';
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao atualizar itens: $e')));
     }
-  }
-  Future<void> _showEditStatusDialog() async {
-    if (_order == null) return;
-    final statusOptions = [
-
-      {'value': 'APPROVED', 'label': 'Aprovado', 'icon': Icons.check_circle, 'color': Colors.green},
-      {'value': 'PROCESSING', 'label': 'Processando', 'icon': Icons.settings, 'color': Colors.blue},
-      {'value': 'COMPLETED', 'label': 'Completo', 'icon': Icons.done_all, 'color': Colors.purple},
-      {'value': 'CANCELLED', 'label': 'Cancelado', 'icon': Icons.cancel, 'color': Colors.red},
-    ];
     final result = await showDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(

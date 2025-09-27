@@ -5,14 +5,18 @@ import 'base_api_service.dart';
 
 class OrderApiDataSource extends BaseApiService {
   /// Atualiza os itens de um pedido existente
-  Future<bool> updateOrderItems(int orderId, Map<int, int> itemQuantities) async {
+  Future<bool> updateOrderItems(int orderId, Map<int, int> itemQuantities, DateTime withdrawDay) async {
+  print('[DEBUG] IDs enviados para updateOrderItems: ${itemQuantities.keys.toList()}');
     // Converte o mapa para Map<String, int> para o backend, se necessário
     final Map<String, int> itemQuantitiesStr = itemQuantities.map((k, v) => MapEntry(k.toString(), v));
+    final body = {
+      'withdrawDay': withdrawDay.toIso8601String(),
+      'itemQuantities': itemQuantitiesStr,
+    };
+    print('[OrderApiDataSource] Enviando updateOrderItems: $body');
     final response = await put(
       '/orders/$orderId',
-      data: {
-        'itemQuantities': itemQuantitiesStr,
-      },
+      data: body,
     );
     return response.statusCode == 200;
   }
