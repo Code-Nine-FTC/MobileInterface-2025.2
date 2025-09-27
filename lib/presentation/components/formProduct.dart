@@ -27,6 +27,7 @@ class ProductForm extends StatefulWidget {
 
 
 class ProductFormState extends State<ProductForm> {
+  String? _sectionId; // Para ADMIN escolher seção
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _currentStockController = TextEditingController();
   String? _measure;
@@ -52,6 +53,16 @@ class ProductFormState extends State<ProductForm> {
   void initState() {
     super.initState();
     _loadDropdownData();
+    _loadSectionForAdmin();
+  }
+
+  Future<void> _loadSectionForAdmin() async {
+    final user = await _storageService.getUser();
+    if (user?.role == 'ADMIN') {
+      setState(() {
+        _sectionId = '1'; // Default: Almoxarifado
+      });
+    }
   }
 
   Future<void> _loadDropdownData() async {
@@ -138,38 +149,19 @@ class ProductFormState extends State<ProductForm> {
   }
   String? _convertDateToIso(String dateString) {
     if (dateString.isEmpty) return null;
-    
     try {
       final parts = dateString.split('/');
       if (parts.length == 3) {
         final day = int.parse(parts[0]);
         final month = int.parse(parts[1]);
         final year = int.parse(parts[2]);
-        
         final dateTime = DateTime(year, month, day);
         return dateTime.toIso8601String();
       }
     } catch (e) {
       print('[FormProduct] Erro ao converter data: $e');
     }
-    
     return null;
-  }
-
-
-  Map<String, dynamic> getFormValues() {
-    final formData = {
-      "name": _nameController.text,
-      "currentStock": int.tryParse(_currentStockController.text) ?? 0,
-      "measure": _measure,
-      "expireDate": _hasExpiryDate ? _convertDateToIso(_expireDateController.text) : null,
-      "supplierId": _supplierId != null ? int.tryParse(_supplierId!) : null,
-      "itemTypeId": _itemTypeId != null ? int.tryParse(_itemTypeId!) : null,
-      "minimumStock": int.tryParse(_minimumStockController.text) ?? 0,
-      "maximumStock": int.tryParse(_maximumStockController.text) ?? 0,
-      "isActive": _isActive,
-    };
-    return formData;
   }
 
   Widget _buildInput(
@@ -228,6 +220,12 @@ class ProductFormState extends State<ProductForm> {
                 }
               : null,
           validator: (value) {
+            // Torna obrigatório para ADMIN escolher a seção
+            if (label == 'Seção') {
+              if (value == null || value.isEmpty) {
+                return "Selecione a seção";
+              }
+            }
             if (widget.requiredFields.contains(label) &&
                 (value == null || value.isEmpty)) {
               return "Selecione o campo $label";
@@ -396,345 +394,504 @@ class ProductFormState extends State<ProductForm> {
       );
     }
 
-    return Container(
-      margin: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            Colors.grey.shade50,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Form(
-        key: widget.formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.inventory_2_rounded,
-                        color: AppColors.primaryLight,
-                        size: 32,
-                      ),
+    return Form(
+      key: widget.formKey,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FutureBuilder(
+              future: _storageService.getUser(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) return SizedBox.shrink();
+                final user = snapshot.data;
+                if (user?.role == 'ADMIN') {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 24),
+                    child: _buildInput(
+                      'Seção',
+                      options: const ['1 - Almoxarifado', '2 - Farmácia'],
+                      dropdownValue: _sectionId != null
+                        ? (_sectionId == '1' ? '1 - Almoxarifado' : _sectionId == '2' ? '2 - Farmácia' : null)
+                        : null,
+                      prefixIcon: Icons.home_work_outlined,
+                      onDropdownChanged: (val) {
+                        setState(() {
+                          if (val != null && (val.startsWith('1') || val.startsWith('2'))) {
+                            _sectionId = val.split(' - ')[0];
+                          } else {
+                            _sectionId = null;
+                          }
+                        });
+                        _notifyChange();
+                      },
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Cadastro de Produto',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryLight,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Preencha os dados do novo produto',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _buildSectionHeader('Informações Básicas', Icons.info_outline_rounded),
-              _buildInput(
-                "Nome",
-                controller: _nameController,
-                prefixIcon: Icons.label_outline_rounded,
-                hintText: "Nome do produto",
-              ),
-              _buildInput(
-                "Tipo do Item",
-                options: _isLoadingData 
-                  ? ["Carregando tipos..."]
-                  : _itemTypes.isEmpty 
-                    ? ["Nenhum tipo encontrado"]
-                    : _itemTypes.map((type) => "${type['id']} - ${type['name']}").toList(),
-                dropdownValue: _itemTypeId != null && _itemTypes.isNotEmpty
-                  ? _itemTypes
-                      .where((type) => type['id'].toString() == _itemTypeId)
-                      .map((type) => "${type['id']} - ${type['name']}")
-                      .firstOrNull
-                  : null,
-                prefixIcon: Icons.category_outlined,
-                enabled: !_isLoadingData && _itemTypes.isNotEmpty,
-                onDropdownChanged: (_isLoadingData || _itemTypes.isEmpty) ? null : (val) { 
-                  setState(() { 
-                    _itemTypeId = val?.split(' - ')[0];
-                  }); 
-                  _notifyChange(); 
-                },
-              ),
-
-              _buildSectionHeader('Controle de Estoque', Icons.inventory_outlined),
-              Row(
+                  );
+                }
+                return SizedBox.shrink();
+              },
+            ),
+            // Título
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Row(
                 children: [
-                  Expanded(
-                    flex: 2,
-                    child: _buildInput(
-                      "Estoque Atual",
-                      keyboardType: TextInputType.number,
-                      controller: _currentStockController,
-                      prefixIcon: Icons.numbers_rounded,
-                      hintText: "Quantidade atual",
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 1,
-                    child: _buildInput(
-                      "Unidade",
-                      options: ["kg", "g", "l", "ml", "unidade"],
-                      dropdownValue: _measure,
-                      prefixIcon: Icons.straighten_rounded,
-                      onDropdownChanged: (val) { setState(() { _measure = val; }); _notifyChange(); },
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildInput(
-                      "Min. Stock",
-                      keyboardType: TextInputType.number,
-                      controller: _minimumStockController,
-                      prefixIcon: Icons.warning_amber_rounded,
-                      hintText: "Mínimo",
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildInput(
-                      "Max. Stock",
-                      keyboardType: TextInputType.number,
-                      controller: _maximumStockController,
-                      prefixIcon: Icons.trending_up_rounded,
-                      hintText: "Máximo",
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    ),
-                  ),
-                ],
-              ),
-
-              _buildSectionHeader('Data de Expiração', Icons.schedule_outlined),
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.event_available_rounded,
-                      color: _hasExpiryDate ? AppColors.primaryLight : Colors.grey,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Possui data de expiração?",
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            _hasExpiryDate ? "Data de expiração será definida" : "Produto não expira",
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.primaryLight.withOpacity(0.8), AppColors.primaryLight],
                       ),
+                      shape: BoxShape.circle,
                     ),
-                    Transform.scale(
-                      scale: 1.2,
-                      child: Switch(
-                        value: _hasExpiryDate,
-                        onChanged: (value) {
-                          setState(() {
-                            _hasExpiryDate = value;
-                            if (!value) {
-                              _expireDateController.clear();
-                            } else {
-                              final now = DateTime.now();
-                              _expireDateController.text = 
-                                  "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}";
-                            }
-                          });
-                          _notifyChange();
-                        },
-                        activeColor: AppColors.primaryLight,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_hasExpiryDate) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: _buildInput(
-                        "Data de Expiração",
-                        keyboardType: TextInputType.number,
-                        controller: _expireDateController,
-                        prefixIcon: Icons.calendar_today_rounded,
-                        hintText: "DD/MM/AAAA",
-                        inputFormatters: dateInputFormatter,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      height: 56,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryLight.withOpacity(0.1),
-                          foregroundColor: AppColors.primaryLight,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {
-                          final now = DateTime.now();
-                          _expireDateController.text = 
-                              "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}";
-                          _notifyChange();
-                        },
-                        child: const Icon(Icons.today_rounded),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              _buildSectionHeader('Fornecedor', Icons.business_rounded),
-              _buildInput(
-                "Fornecedor",
-                options: _isLoadingData 
-                  ? ["Carregando fornecedores..."]
-                  : _suppliers.isEmpty 
-                    ? ["Nenhum fornecedor encontrado"]
-                    : _suppliers.map((supplier) => "${supplier['id']} - ${supplier['name']}").toList(),
-                dropdownValue: _supplierId != null && _suppliers.isNotEmpty
-                  ? _suppliers
-                      .where((supplier) => supplier['id'].toString() == _supplierId)
-                      .map((supplier) => "${supplier['id']} - ${supplier['name']}")
-                      .firstOrNull
-                  : null,
-                prefixIcon: Icons.store_rounded,
-                enabled: !_isLoadingData && _suppliers.isNotEmpty,
-                onDropdownChanged: (_isLoadingData || _suppliers.isEmpty) ? null : (val) { 
-                  setState(() { 
-                    _supplierId = val?.split(' - ')[0];
-                  }); 
-                  _notifyChange(); 
-                },
-              ),
-
-              if (_loadError != null) ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: 20),
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text("Recarregar dados"),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.orange,
-                      side: const BorderSide(color: Colors.orange),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isLoadingData = true;
-                        _loadError = null;
-                      });
-                      _loadDropdownData();
-                    },
+                    child: const Icon(Icons.inventory_2_rounded, color: Colors.white, size: 28),
                   ),
-                ),
-              ],
-
-              const SizedBox(height: 32),
-
-              Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.primaryLight, AppColors.secondaryLight],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primaryLight.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  onPressed: widget.onSubmit,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.save_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
                       Text(
-                        "Cadastrar Produto",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
+                        'Cadastro de Produto',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: AppColors.primaryLight,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Preencha os dados do novo produto',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ],
                   ),
+                ],
+              ),
+            ),
+
+            // Card Informações Básicas
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, Colors.grey[50]!],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+                border: Border.all(color: Colors.grey.withOpacity(0.08)),
+              ),
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.info_outline_rounded, color: AppColors.primaryLight, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Informações Básicas',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _buildInput(
+                    "Nome",
+                    controller: _nameController,
+                    prefixIcon: Icons.label_outline_rounded,
+                    hintText: "Nome do produto",
+                  ),
+                  _buildInput(
+                    "Tipo do Item",
+                    options: _isLoadingData 
+                      ? ["Carregando tipos..."]
+                      : _itemTypes.isEmpty 
+                        ? ["Nenhum tipo encontrado"]
+                        : _itemTypes.map((type) => "${type['id']} - ${type['name']}").toList(),
+                    dropdownValue: _itemTypeId != null && _itemTypes.isNotEmpty
+                      ? _itemTypes
+                          .where((type) => type['id'].toString() == _itemTypeId)
+                          .map((type) => "${type['id']} - ${type['name']}")
+                          .firstOrNull
+                      : null,
+                    prefixIcon: Icons.category_outlined,
+                    enabled: !_isLoadingData && _itemTypes.isNotEmpty,
+                    onDropdownChanged: (_isLoadingData || _itemTypes.isEmpty) ? null : (val) { 
+                      setState(() { 
+                        _itemTypeId = val?.split(' - ')[0];
+                      }); 
+                      _notifyChange(); 
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // Card Controle de Estoque
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, Colors.grey[50]!],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+                border: Border.all(color: Colors.grey.withOpacity(0.08)),
+              ),
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.inventory_outlined, color: AppColors.primaryLight, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Controle de Estoque',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: _buildInput(
+                          "Estoque Atual",
+                          keyboardType: TextInputType.number,
+                          controller: _currentStockController,
+                          prefixIcon: Icons.numbers_rounded,
+                          hintText: "Quantidade atual",
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 1,
+                        child: _buildInput(
+                          "Unidade",
+                          options: ["kg", "g", "l", "ml", "unidade"],
+                          dropdownValue: _measure,
+                          prefixIcon: Icons.straighten_rounded,
+                          onDropdownChanged: (val) { setState(() { _measure = val; }); _notifyChange(); },
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildInput(
+                          "Min. Stock",
+                          keyboardType: TextInputType.number,
+                          controller: _minimumStockController,
+                          prefixIcon: Icons.warning_amber_rounded,
+                          hintText: "Mínimo",
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildInput(
+                          "Max. Stock",
+                          keyboardType: TextInputType.number,
+                          controller: _maximumStockController,
+                          prefixIcon: Icons.trending_up_rounded,
+                          hintText: "Máximo",
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Card Data de Expiração
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, Colors.grey[50]!],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+                border: Border.all(color: Colors.grey.withOpacity(0.08)),
+              ),
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.schedule_outlined, color: AppColors.primaryLight, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Data de Expiração',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Switch(
+                              value: _hasExpiryDate,
+                              onChanged: (value) {
+                                setState(() {
+                                  _hasExpiryDate = value;
+                                  if (!value) {
+                                    _expireDateController.clear();
+                                  } else {
+                                    final now = DateTime.now();
+                                    _expireDateController.text = "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}";
+                                  }
+                                });
+                                _notifyChange();
+                              },
+                              activeColor: AppColors.primaryLight,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(_hasExpiryDate ? "Com expiração" : "Sem expiração"),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_hasExpiryDate) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: _buildInput(
+                            "Data de Expiração",
+                            keyboardType: TextInputType.number,
+                            controller: _expireDateController,
+                            prefixIcon: Icons.calendar_today_rounded,
+                            hintText: "DD/MM/AAAA",
+                            inputFormatters: dateInputFormatter,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          height: 56,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryLight.withOpacity(0.1),
+                              foregroundColor: AppColors.primaryLight,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            onPressed: () {
+                              final now = DateTime.now();
+                              _expireDateController.text = "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}";
+                              _notifyChange();
+                            },
+                            child: const Icon(Icons.today_rounded),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Card Fornecedor
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, Colors.grey[50]!],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+                border: Border.all(color: Colors.grey.withOpacity(0.08)),
+              ),
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.business_rounded, color: AppColors.primaryLight, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Fornecedor',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _buildInput(
+                    "Fornecedor",
+                    options: _isLoadingData 
+                      ? ["Carregando fornecedores..."]
+                      : _suppliers.isEmpty 
+                        ? ["Nenhum fornecedor encontrado"]
+                        : _suppliers.map((supplier) => "${supplier['id']} - ${supplier['name']}").toList(),
+                    dropdownValue: _supplierId != null && _suppliers.isNotEmpty
+                      ? _suppliers
+                          .where((supplier) => supplier['id'].toString() == _supplierId)
+                          .map((supplier) => "${supplier['id']} - ${supplier['name']}")
+                          .firstOrNull
+                      : null,
+                    prefixIcon: Icons.store_rounded,
+                    enabled: !_isLoadingData && _suppliers.isNotEmpty,
+                    onDropdownChanged: (_isLoadingData || _suppliers.isEmpty) ? null : (val) { 
+                      setState(() { 
+                        _supplierId = val?.split(' - ')[0];
+                      }); 
+                      _notifyChange(); 
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            if (_loadError != null) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 20),
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text("Recarregar dados"),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange,
+                    side: const BorderSide(color: Colors.orange),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isLoadingData = true;
+                      _loadError = null;
+                    });
+                    _loadDropdownData();
+                  },
                 ),
               ),
             ],
-          ),
+
+            const SizedBox(height: 32),
+
+            // Botão de ação destacado
+            Container(
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.primaryLight, AppColors.secondaryLight],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryLight.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: widget.onSubmit,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.save_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      "Cadastrar Produto",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -771,6 +928,26 @@ class ProductFormState extends State<ProductForm> {
     );
   }
   Map<String, dynamic> get values => getFormValues();
+
+  Map<String, dynamic> getFormValues() {
+    final map = {
+      'name': _nameController.text,
+      'currentStock': int.tryParse(_currentStockController.text),
+      'measure': _measure,
+      'expireDate': _hasExpiryDate && _expireDateController.text.isNotEmpty
+          ? _convertDateToIso(_expireDateController.text)
+          : null,
+      'supplierId': _supplierId != null ? int.tryParse(_supplierId!) : null,
+      'itemTypeId': _itemTypeId != null ? int.tryParse(_itemTypeId!) : null,
+      'minimumStock': int.tryParse(_minimumStockController.text),
+      'maximumStock': int.tryParse(_maximumStockController.text),
+      'isActive': _isActive,
+    };
+    if (_sectionId != null) {
+      map['sectionId'] = int.tryParse(_sectionId!);
+    }
+    return map;
+  }
 }
 class DateInputFormatter extends TextInputFormatter {
   @override

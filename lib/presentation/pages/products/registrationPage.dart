@@ -101,13 +101,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
         currentIndex: _selectedIndex,
         onTap: _onNavTap,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ProductForm(
-          key: _productFormKey,
-          formKey: _formKey,
-          onSubmit: _registerProduct,
-          requiredFields: ["Nome", "Estoque mínimo", "Data do cadastro"],
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ProductForm(
+            key: _productFormKey,
+            formKey: _formKey,
+            onSubmit: _registerProduct,
+            requiredFields: ["Nome", "Estoque mínimo", "Data do cadastro"],
+          ),
         ),
       ),
     );

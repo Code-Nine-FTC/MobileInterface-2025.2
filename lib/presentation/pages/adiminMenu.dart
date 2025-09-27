@@ -96,15 +96,14 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
             _buildSectionHeader('Ações Principais', Icons.star_rounded),
             const SizedBox(height: 16),
             Row(
-              children: [
+                children: [
                 Expanded(
                   child: _buildModernCard(
-                    icon: Icons.list_alt_rounded,
-                    label: 'Pedidos',
-                    description: 'Acompanhar status',
-                    color: Colors.orange,
-                    onTap: () =>
-                        Navigator.pushNamed(context, '/order_management'),
+                    icon: Icons.add_circle_outline_rounded,
+                    label: 'Cadastrar',
+                    description: 'Novos produtos',
+                    color: Colors.green,
+                    onTap: () => Navigator.pushNamed(context, '/register_product'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -124,17 +123,29 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
 
             Row(
               children: [
-                const SizedBox(width: 0),
                 Expanded(
                   child: _buildModernCard(
-                    icon: Icons.local_shipping_rounded,
-                    label: 'Fornecedores',
-                    description: 'Gestão de parceiros',
-                    color: Colors.purple,
+                    icon: Icons.list_alt_rounded,
+                    label: 'Pedidos',
+                    description: 'Acompanhar status',
+                    color: Colors.orange,
                     onTap: () =>
-                        Navigator.pushNamed(context, '/supplier_management'),
+                        Navigator.pushNamed(context, '/order_management'),
                   ),
                 ),
+                
+                const SizedBox(width: 0),
+                
+                // Expanded(
+                //   child: _buildModernCard(
+                //     icon: Icons.local_shipping_rounded,
+                //     label: 'Fornecedores',
+                //     description: 'Gestão de parceiros',
+                //     color: Colors.purple,
+                //     onTap: () =>
+                //         Navigator.pushNamed(context, '/supplier_management'),
+                //   ),
+                // ),
               ],
             ),
           ],
