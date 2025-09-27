@@ -1,10 +1,34 @@
 import 'package:flutter/material.dart';
-
 import '../../../core/theme/app_colors.dart';
 import '../../components/navBar.dart';
 import '../../components/standartScreen.dart';
 import '../../../data/api/order_api_data_source.dart';
 import '../../../domain/entities/order.dart';
+
+// Centralização dos status
+class OrderStatusInfo {
+  final String english;
+  final String portuguese;
+  final Color color;
+  const OrderStatusInfo({required this.english, required this.portuguese, required this.color});
+}
+
+const Map<String, OrderStatusInfo> kOrderStatusMap = {
+  'pending': OrderStatusInfo(english: 'pending', portuguese: 'Pendente', color: Colors.orange),
+  'processing': OrderStatusInfo(english: 'processing', portuguese: 'Processando', color: Colors.blue),
+  'approved': OrderStatusInfo(english: 'approved', portuguese: 'Aprovado', color: Colors.teal),
+  'completed': OrderStatusInfo(english: 'completed', portuguese: 'Concluído', color: Colors.green),
+  'cancelled': OrderStatusInfo(english: 'cancelled', portuguese: 'Cancelado', color: Colors.red),
+  'canceled': OrderStatusInfo(english: 'canceled', portuguese: 'Cancelado', color: Colors.red),
+  'in_progress': OrderStatusInfo(english: 'in_progress', portuguese: 'Em andamento', color: Colors.amber),
+  // aliases in pt-BR
+  'pendente': OrderStatusInfo(english: 'pending', portuguese: 'Pendente', color: Colors.orange),
+  'processando': OrderStatusInfo(english: 'processing', portuguese: 'Processando', color: Colors.blue),
+  'aprovado': OrderStatusInfo(english: 'approved', portuguese: 'Aprovado', color: Colors.teal),
+  'concluido': OrderStatusInfo(english: 'completed', portuguese: 'Concluído', color: Colors.green),
+  'cancelado': OrderStatusInfo(english: 'cancelled', portuguese: 'Cancelado', color: Colors.red),
+  'em andamento': OrderStatusInfo(english: 'in_progress', portuguese: 'Em andamento', color: Colors.amber),
+};
 
 class OrderManagementPage extends StatefulWidget {
   const OrderManagementPage({super.key});
@@ -47,13 +71,15 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
   void _applyFilters() {
     _filteredOrders = _allOrders.where((order) {
       final status = order.status.toLowerCase();
-      final isConcluido = status == 'completed' || status == 'concluido';
+      final info = kOrderStatusMap[status];
+      final isConcluido = info?.english == 'completed';
       final matchesStatus = _tabIndex == 0
-        ? isConcluido
-        : !isConcluido; 
+          ? isConcluido
+          : !isConcluido;
       final matchesSearch = _searchQuery.isEmpty ||
-        order.id.toString().contains(_searchQuery) ||
-        order.status.toLowerCase().contains(_searchQuery.toLowerCase());
+          order.id.toString().contains(_searchQuery) ||
+          (info?.portuguese.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
+          order.status.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     }).toList();
   }
@@ -84,32 +110,12 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
 
   Color _getStatusColor(String status) {
     final statusLower = status.toLowerCase();
-    if (statusLower == 'completed' || statusLower == 'concluido') {
-      return Colors.green;
-    } else if (statusLower == 'pending' || statusLower == 'pendente') {
-      return Colors.orange;
-    } else if (statusLower == 'processing' || statusLower == 'processando') {
-      return Colors.blue;
-    } else {
-      return Colors.grey;
-    }
+    return kOrderStatusMap[statusLower]?.color ?? Colors.grey;
   }
 
   String _getStatusText(String status) {
     final statusLower = status.toLowerCase();
-    switch (statusLower) {
-      case 'completed':
-      case 'concluido':
-        return 'Concluído';
-      case 'pending':
-      case 'pendente':
-        return 'Pendente';
-      case 'processing':
-      case 'processando':
-        return 'Processando';
-      default:
-        return status;
-    }
+    return kOrderStatusMap[statusLower]?.portuguese ?? status;
   }
 
   @override
@@ -447,6 +453,9 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                             itemCount: _filteredOrders.length,
                             itemBuilder: (context, index) {
                               final order = _filteredOrders[index];
+                              // Log para depuração do status
+                              // ignore: avoid_print
+                              print('Order #order.id status: order.status');
                               final statusColor = _getStatusColor(order.status);
                               final statusText = _getStatusText(order.status);
                               
