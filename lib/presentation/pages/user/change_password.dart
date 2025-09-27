@@ -131,6 +131,9 @@ class _ChangePasswordState extends State<ChangePassword> {
                             if (value.length < 6) {
                               return 'A senha deve ter pelo menos 6 caracteres';
                             }
+                            if (!RegExp(r'[A-Za-z]').hasMatch(value)) {
+                              return 'A senha deve conter pelo menos uma letra';
+                            }
                             return null;
                           },
                         ),
