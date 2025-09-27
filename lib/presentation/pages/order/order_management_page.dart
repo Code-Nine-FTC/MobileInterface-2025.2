@@ -39,7 +39,7 @@ class OrderManagementPage extends StatefulWidget {
 
 class _OrderManagementPageState extends State<OrderManagementPage> {
   int _selectedIndex = 0;
-  int _tabIndex = 1; // Começa em 'Em andamento'
+  String _selectedStatusFilter = 'in_progress'; // Começa em 'Em andamento'
   final TextEditingController _searchController = TextEditingController();
   List<Order> _allOrders = [];
   List<Order> _filteredOrders = [];
@@ -72,10 +72,28 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
     _filteredOrders = _allOrders.where((order) {
       final status = order.status.toLowerCase();
       final info = kOrderStatusMap[status];
-      final isConcluido = info?.english == 'completed';
-      final matchesStatus = _tabIndex == 0
-          ? isConcluido
-          : !isConcluido;
+      bool matchesStatus = true;
+      if (_selectedStatusFilter != 'all') {
+        switch (_selectedStatusFilter) {
+          case 'pending':
+            matchesStatus = info?.english == 'pending';
+            break;
+          case 'in_progress':
+            matchesStatus = info?.english == 'processing' || info?.english == 'in_progress';
+            break;
+          case 'completed':
+            matchesStatus = info?.english == 'completed';
+            break;
+          case 'canceled':
+            matchesStatus = info?.english == 'canceled' || info?.english == 'cancelled';
+            break;
+          case 'approved':
+            matchesStatus = info?.english == 'approved';
+            break;
+          default:
+            matchesStatus = true;
+        }
+      }
       final matchesSearch = _searchQuery.isEmpty ||
           order.id.toString().contains(_searchQuery) ||
           (info?.portuguese.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
@@ -116,6 +134,37 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
   String _getStatusText(String status) {
     final statusLower = status.toLowerCase();
     return kOrderStatusMap[statusLower]?.portuguese ?? status;
+  }
+
+  Widget _buildStatusFilterChip(String label, String value, Color color) {
+    final bool selected = _selectedStatusFilter == value;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedStatusFilter = value;
+          _applyFilters();
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? color : Colors.grey[200],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? color : Colors.grey[300]!,
+            width: 1.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : color,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -271,105 +320,53 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                   
                   const SizedBox(height: 12),
                   
-                  // Segunda linha: Botões de status
-                  Row(
-                    children: [
-                      // Espaço para alinhar com o ícone da linha de cima
-                      const SizedBox(width: 32),
-                      
-                      Expanded(
-                        child: Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: _tabIndex == 1 ? Colors.orange : Colors.grey[200],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              onTap: () {
-                                setState(() {
-                                  _tabIndex = 1;
-                                  _applyFilters();
-                                });
-                              },
-                              child: Center(
-                                child: Text(
-                                  'Em andamento',
-                                  style: TextStyle(
-                                    color: _tabIndex == 1 ? Colors.white : Colors.black87,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                  // Segunda linha: Filtros de status
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 8),
+                        _buildStatusFilterChip('Pendente', 'pending', Colors.amber),
+                        const SizedBox(width: 8),
+                        _buildStatusFilterChip('Em andamento', 'in_progress', Colors.orange),
+                        const SizedBox(width: 8),
+                        _buildStatusFilterChip('Aprovados', 'approved', Colors.teal),
+                        const SizedBox(width: 8),
+                        _buildStatusFilterChip('Concluídos', 'completed', Colors.green),
+                        const SizedBox(width: 8),
+                        _buildStatusFilterChip('Cancelados', 'canceled', Colors.red),
+                        const SizedBox(width: 8),
+                        _buildStatusFilterChip('Todos', 'all', Colors.grey),
+                        if (_searchQuery.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _searchController.clear();
+                                _searchQuery = '';
+                                _applyFilters();
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.clear_all,
+                                color: Colors.red[600],
+                                size: 18,
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                      
-                      const SizedBox(width: 12),
-                      
-                      Expanded(
-                        child: Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: _tabIndex == 0 ? Colors.green : Colors.grey[200],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              onTap: () {
-                                setState(() {
-                                  _tabIndex = 0;
-                                  _applyFilters();
-                                });
-                              },
-                              child: Center(
-                                child: Text(
-                                  'Concluídos',
-                                  style: TextStyle(
-                                    color: _tabIndex == 0 ? Colors.white : Colors.black87,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      
-                      // Botão limpar filtros
-                      if (_searchQuery.isNotEmpty) ...[
-                        const SizedBox(width: 12),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _searchController.clear();
-                              _searchQuery = '';
-                              _applyFilters();
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.clear_all,
-                              color: Colors.red[600],
-                              size: 18,
-                            ),
-                          ),
-                        ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
+
+
+// Método correto dentro da classe
                 ],
               ),
             ),
@@ -500,18 +497,43 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                                             Container(
                                               padding: const EdgeInsets.all(16),
                                               decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                  colors: [
-                                                    statusColor.withValues(alpha: 0.8),
-                                                    statusColor,
-                                                  ],
-                                                ),
+                                                gradient: (() {
+                                                  final eng = kOrderStatusMap[order.status.toLowerCase()]?.english;
+                                                  if (eng == 'processing') {
+                                                    return LinearGradient(
+                                                      begin: Alignment.topLeft,
+                                                      end: Alignment.bottomRight,
+                                                      colors: [
+                                                        Colors.orange.shade400,
+                                                        Colors.orange.shade700,
+                                                      ],
+                                                    );
+                                                  } else if (eng == 'pending') {
+                                                    return LinearGradient(
+                                                      begin: Alignment.topLeft,
+                                                      end: Alignment.bottomRight,
+                                                      colors: [
+                                                        Colors.amber.shade300,
+                                                        Colors.amber.shade600,
+                                                      ],
+                                                    );
+                                                  } else {
+                                                    return LinearGradient(
+                                                      begin: Alignment.topLeft,
+                                                      end: Alignment.bottomRight,
+                                                      colors: [
+                                                        statusColor.withValues(alpha: 0.8),
+                                                        statusColor,
+                                                      ],
+                                                    );
+                                                  }
+                                                })(),
                                                 borderRadius: BorderRadius.circular(16),
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: statusColor.withValues(alpha: 0.3),
+                                                    color: (kOrderStatusMap[order.status.toLowerCase()]?.english == 'processing'
+                                                        ? Colors.orange.withOpacity(0.3)
+                                                        : statusColor.withValues(alpha: 0.3)),
                                                     blurRadius: 8,
                                                     offset: const Offset(0, 4),
                                                   ),
@@ -546,7 +568,16 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                                                       vertical: 4,
                                                     ),
                                                     decoration: BoxDecoration(
-                                                      color: statusColor.withValues(alpha: 0.1),
+                                                      color: (() {
+                                                        final eng = kOrderStatusMap[order.status.toLowerCase()]?.english;
+                                                        if (eng == 'processing') {
+                                                          return Colors.orange.withOpacity(0.15);
+                                                        } else if (eng == 'pending') {
+                                                          return Colors.amber.withOpacity(0.18);
+                                                        } else {
+                                                          return statusColor.withValues(alpha: 0.1);
+                                                        }
+                                                      })(),
                                                       borderRadius: BorderRadius.circular(8),
                                                     ),
                                                     child: Text(
@@ -554,29 +585,21 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight: FontWeight.w600,
-                                                        color: statusColor,
+                                                        color: (() {
+                                                          final eng = kOrderStatusMap[order.status.toLowerCase()]?.english;
+                                                          if (eng == 'processing') {
+                                                            return Colors.orange.shade700;
+                                                          } else if (eng == 'pending') {
+                                                            return Colors.amber.shade800;
+                                                          } else {
+                                                            return statusColor;
+                                                          }
+                                                        })(),
                                                       ),
                                                     ),
                                                   ),
                                                   const SizedBox(height: 8),
                                                   // Data de retirada
-                                                  Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons.schedule,
-                                                        size: 14,
-                                                        color: Colors.grey[600],
-                                                      ),
-                                                      const SizedBox(width: 4),
-                                                      Text(
-                                                        'Retirada: ${_formatDateTime(order.withdrawDay)}',
-                                                        style: TextStyle(
-                                                          fontSize: 12,
-                                                          color: Colors.grey[600],
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
                                                   const SizedBox(height: 4),
                                                   // Data de criação
                                                   Row(
@@ -605,12 +628,30 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                                                 Container(
                                                   padding: const EdgeInsets.all(8),
                                                   decoration: BoxDecoration(
-                                                    color: AppColors.infoLight.withValues(alpha: 0.1),
+                                                    color: (() {
+                                                      final eng = kOrderStatusMap[order.status.toLowerCase()]?.english;
+                                                      if (eng == 'processing') {
+                                                        return Colors.orange.withOpacity(0.15);
+                                                      } else if (eng == 'pending') {
+                                                        return Colors.amber.withOpacity(0.18);
+                                                      } else {
+                                                        return AppColors.infoLight.withValues(alpha: 0.1);
+                                                      }
+                                                    })(),
                                                     borderRadius: BorderRadius.circular(12),
                                                   ),
                                                   child: Icon(
                                                     Icons.qr_code_2,
-                                                    color: AppColors.infoLight,
+                                                    color: (() {
+                                                      final eng = kOrderStatusMap[order.status.toLowerCase()]?.english;
+                                                      if (eng == 'processing') {
+                                                        return Colors.orange.shade700;
+                                                      } else if (eng == 'pending') {
+                                                        return Colors.amber.shade800;
+                                                      } else {
+                                                        return AppColors.infoLight;
+                                                      }
+                                                    })(),
                                                     size: 24,
                                                   ),
                                                 ),

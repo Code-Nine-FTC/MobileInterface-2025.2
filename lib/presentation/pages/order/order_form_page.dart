@@ -97,7 +97,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
 
   void _showItemSelectionDialog() {
     // Cópia local do mapa de itens selecionados
-    Map<int, int> localSelected = Map<int, int>.from(_selectedItemQuantities);
+  Map<int, int> localSelected = Map<int, int>.from(_selectedItemQuantities);
     showDialog(
       context: context,
       builder: (context) {
@@ -197,12 +197,56 @@ class _OrderFormPageState extends State<OrderFormPage> {
                                   if (qty != null && qty > 0) {
                                     setDialogState(() {
                                       localSelected[itemId] = qty;
+                                      // Busca fornecedores do item de forma robusta
+                                      final Set<int> foundSupplierIds = {};
+                                      // Caso 1: lista de suppliers
+                                      final itemSuppliers = item['suppliers'] as List<dynamic>?;
+                                      if (itemSuppliers != null) {
+                                        for (var s in itemSuppliers) {
+                                          final sid = s is int ? s : (s['id'] ?? s['supplierId'] ?? s['supplier_id']);
+                                          if (sid != null) foundSupplierIds.add(int.tryParse(sid.toString()) ?? sid);
+                                        }
+                                      }
+                                      // Caso 2: supplierId direto
+                                      final supplierId = item['supplierId'] ?? item['supplier_id'];
+                                      if (supplierId != null) {
+                                        foundSupplierIds.add(int.tryParse(supplierId.toString()) ?? supplierId);
+                                      }
+                                      // Caso 3: supplier como objeto
+                                      final supplierObj = item['supplier'];
+                                      if (supplierObj != null) {
+                                        final sid = supplierObj is int ? supplierObj : (supplierObj['id'] ?? supplierObj['supplierId'] ?? supplierObj['supplier_id']);
+                                        if (sid != null) foundSupplierIds.add(int.tryParse(sid.toString()) ?? sid);
+                                      }
+                                      // Adiciona todos encontrados
+                                      for (final sid in foundSupplierIds) {
+                                        if (!_selectedSupplierIds.contains(sid)) {
+                                          _selectedSupplierIds.add(sid);
+                                        }
+                                      }
                                     });
+                                    setState(() {});
                                   }
                                 } else {
                                   setDialogState(() {
                                     localSelected.remove(itemId);
+                                    // Remove fornecedores não mais vinculados a nenhum item selecionado
+                                    final remainingSupplierIds = <int>{};
+                                    localSelected.forEach((key, value) {
+                                      final itemObj = _availableItems.firstWhere(
+                                        (i) => (i['id'] ?? i['itemId']) == key,
+                                        orElse: () => <String, dynamic>{},
+                                      );
+                                      if (itemObj['suppliers'] != null) {
+                                        for (var s in itemObj['suppliers']) {
+                                          final sid = s is int ? s : (s['id'] ?? s['supplierId']);
+                                          if (sid != null) remainingSupplierIds.add(sid);
+                                        }
+                                      }
+                                    });
+                                    _selectedSupplierIds.removeWhere((sid) => !remainingSupplierIds.contains(sid));
                                   });
+                                  setState(() {});
                                 }
                               },
                               activeColor: AppColors.infoLight,
@@ -586,7 +630,6 @@ class _OrderFormPageState extends State<OrderFormPage> {
                                   (item) => (item['id'] ?? item['itemId']) == entry.key,
                                   orElse: () => {'name': 'Item #${entry.key}'},
                                 );
-                                final supplierName = item['supplierName']?.toString();
                                 return Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
@@ -595,7 +638,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
                                     border: Border.all(color: AppColors.infoLight.withOpacity(0.3)),
                                   ),
                                   child: Text(
-                                    '${item['name']?.toString() ?? 'Item #${entry.key}'}${supplierName != null && supplierName.isNotEmpty ? ' (${supplierName})' : ''}  x${entry.value}',
+                                    '${item['name']?.toString() ?? 'Item #${entry.key}'}  x${entry.value}',
                                     style: TextStyle(
                                       color: AppColors.infoLight,
                                       fontSize: 12,
@@ -672,6 +715,12 @@ class _OrderFormPageState extends State<OrderFormPage> {
                                   (supplier) => supplier['id'] == supplierId,
                                   orElse: () => {'name': 'Fornecedor #$supplierId'},
                                 );
+                                final supplierName =
+                                  (supplier['name']?.toString().isNotEmpty ?? false)
+                                    ? supplier['name'].toString()
+                                    : (supplier['nome']?.toString().isNotEmpty ?? false)
+                                        ? supplier['nome'].toString()
+                                        : 'Fornecedor #$supplierId';
                                 return Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
@@ -680,7 +729,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
                                     border: Border.all(color: AppColors.infoLight.withOpacity(0.3)),
                                   ),
                                   child: Text(
-                                    supplier['name']?.toString() ?? 'Fornecedor #$supplierId',
+                                    supplierName,
                                     style: TextStyle(
                                       color: AppColors.infoLight,
                                       fontSize: 12,

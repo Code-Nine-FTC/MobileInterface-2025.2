@@ -46,6 +46,10 @@ class OrderApiDataSource extends BaseApiService {
     final response = await patch('/orders/complete/$orderId');
     return response.statusCode == 200;
   }
+  Future<bool> cancelOrder(int orderId) async {
+    final response = await patch('/orders/cancel/$orderId');
+    return response.statusCode == 200;
+  }
   Future<Order?> createOrder({
     required DateTime withdrawDay,
     required Map<String, int> itemQuantities,
@@ -67,10 +71,6 @@ class OrderApiDataSource extends BaseApiService {
     } else {
       throw Exception('Erro ao criar pedido: ${response.data}');
     }
-  }
-  Future<bool> cancelOrder(int orderId) async {
-    final response = await patch('/orders/cancel/$orderId');
-    return response.statusCode == 200;
   }
 
   Future<Order?> updateOrderStatus({

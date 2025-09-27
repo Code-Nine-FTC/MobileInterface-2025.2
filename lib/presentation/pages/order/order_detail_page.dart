@@ -139,9 +139,7 @@ import '../../components/navBar.dart';
 
     // Garante que todos os itens do pedido estejam presentes em availableItems e itemNames
     // Usa sempre o itemId do catálogo para seleção
-    final pedidoIds = _orderItems
-        .where((item) => item.itemId != null)
-        .map((item) => item.itemId!);
+  final pedidoIds = _orderItems.map((item) => item.itemId);
     for (final id in pedidoIds) {
       if (!availableItems.contains(id)) {
         availableItems.add(id);
@@ -348,7 +346,7 @@ import '../../components/navBar.dart';
       final validIds = itemsBackend.map((item) => item['itemId'] ?? item['id']).whereType<int>().toSet();
       // Não permite duplicidade: só envia cada itemId uma vez
       final filteredItemQuantities = <int, int>{};
-      final alreadyInOrder = _orderItems.map((item) => item.itemId).toSet();
+  // final alreadyInOrder = _orderItems.map((item) => item.itemId).toSet();
       itemQuantities.forEach((id, qty) {
         if (validIds.contains(id) && qty > 0) {
           // Se já está no pedido, só atualiza a quantidade
@@ -468,7 +466,7 @@ import '../../components/navBar.dart';
     Order? _order;
     bool _isLoading = true;
     String? _error;
-    Map<int, String> _itemNames = {};
+  // Map<int, String> _itemNames = {};
   // Removido campo _supplierNames, agora usamos supplierName dos itens
 
     @override
@@ -531,29 +529,90 @@ import '../../components/navBar.dart';
     @override
     Widget build(BuildContext context) {
   return Scaffold(
-        backgroundColor: Colors.transparent,
-              bottomNavigationBar: CustomNavbar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-      ),
-        body: StandardScreen(
-          title: _order != null ? 'Pedido #${_order!.id}' : 'Detalhes do Pedido',
-          child: _isLoading
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text('Carregando detalhes...', style: TextStyle(color: Colors.grey)),
-                    ],
+    backgroundColor: Colors.transparent,
+    bottomNavigationBar: CustomNavbar(
+      currentIndex: _selectedIndex,
+      onTap: (index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+      },
+    ),
+    body: StandardScreen(
+      title: _order != null ? 'Pedido #${_order!.id}' : 'Detalhes do Pedido',
+      child: _isLoading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Carregando detalhes...', style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+            )
+          : _error != null
+              ? Center(
+                  child: Container(
+                    margin: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Ops! Algo deu errado',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Erro ao carregar: ',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        Text(
+                          _error ?? '',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.red[600]),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: _loadOrderDetails,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Tentar novamente'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.infoLight,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 )
-              : _error != null
+              : _order == null
                   ? Center(
                       child: Container(
                         margin: const EdgeInsets.all(24),
@@ -563,7 +622,7 @@ import '../../components/navBar.dart';
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.red.withOpacity(0.1),
+                              color: Colors.grey.withOpacity(0.1),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -575,194 +634,167 @@ import '../../components/navBar.dart';
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.1),
+                                color: Colors.orange.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(50),
                               ),
-                              child: const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                              child: const Icon(Icons.search_off, color: Colors.orange, size: 48),
                             ),
                             const SizedBox(height: 16),
                             const Text(
-                              'Ops! Algo deu errado',
+                              'Pedido não encontrado',
                               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Erro ao carregar: ',
+                              'O pedido que você procura não existe ou foi removido.',
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.grey[600]),
-                            ),
-                            Text(
-                              _error ?? '',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.red[600]),
-                            ),
-                            const SizedBox(height: 20),
-                            ElevatedButton.icon(
-                              onPressed: _loadOrderDetails,
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Tentar novamente'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.infoLight,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
                             ),
                           ],
                         ),
                       ),
                     )
-                  : _order == null
-                      ? Center(
-                          child: Container(
-                            margin: const EdgeInsets.all(24),
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header com status e datas
+                          _buildOrderHeader(),
+                          const SizedBox(height: 24),
+                          // Card de itens do pedido
+                          _buildOrderItemsCard(),
+                          const SizedBox(height: 24),
+                          // Card de fornecedores
+                          _buildInfoCards(),
+                          const SizedBox(height: 24),
+                          if (_currentUser != null && (_currentUser!.role == 'ADMIN' || _currentUser!.role == 'MANAGER'))
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(50),
-                                  ),
-                                  child: const Icon(Icons.search_off, color: Colors.orange, size: 48),
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Pedido não encontrado',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'O pedido que você procura não existe ou foi removido.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.grey[600]),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Header com status e datas
-                              _buildOrderHeader(),
-                              const SizedBox(height: 24),
-                              // Card de itens do pedido
-                              _buildOrderItemsCard(),
-                              const SizedBox(height: 24),
-                              // Card de fornecedores
-                              _buildInfoCards(),
-                              const SizedBox(height: 24),
-                              if (_currentUser != null && (_currentUser!.role == 'ADMIN' || _currentUser!.role == 'MANAGER'))
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                // Um botão para cada ação: Aprovar, Concluir, Processar, Cancelar
+                                Wrap(
+                                  spacing: 12,
+                                  runSpacing: 12,
+                                  alignment: WrapAlignment.center,
                                   children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        ElevatedButton.icon(
-                                          onPressed: _completeOrder,
-                                          icon: const Icon(Icons.done_all),
-                                          label: const Text('Concluir'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.purple,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                          ),
-                                        ),
-                                        ElevatedButton.icon(
-                                          onPressed: _approveOrder,
-                                          icon: const Icon(Icons.check_circle),
-                                          label: const Text('Aprovar'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.green,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                          ),
-                                        ),
-                                        ElevatedButton.icon(
-                                          onPressed: _cancelOrder,
-                                          icon: const Icon(Icons.cancel),
-                                          label: const Text('Cancelar'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                          ),
-                                        ),
-                                      ],
+                                    ElevatedButton.icon(
+                                      onPressed: _approveOrder,
+                                      icon: const Icon(Icons.check_circle),
+                                      label: const Text('Aprovar'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
                                     ),
-                                    const SizedBox(height: 8),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: PopupMenuButton<String>(
-                                        icon: const Icon(Icons.more_vert, color: Colors.black87),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                        onSelected: (value) {
-                                          switch (value) {
-                                            case 'status':
-                                              _showEditStatusDialog();
-                                              break;
-                                            case 'itens':
-                                              _showEditItemsDialog();
-                                              break;
-                                          }
-                                        },
-                                        itemBuilder: (context) => [
-                                          PopupMenuItem(
-                                            value: 'status',
-                                            child: Row(
-                                              children: const [
-                                                Icon(Icons.edit, color: Colors.blue),
-                                                SizedBox(width: 8),
-                                                Text('Editar Status'),
-                                              ],
-                                            ),
-                                          ),
-                                          PopupMenuItem(
-                                            value: 'itens',
-                                            child: Row(
-                                              children: const [
-                                                Icon(Icons.edit_note, color: Colors.orange),
-                                                SizedBox(width: 8),
-                                                Text('Editar Itens'),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
+                                    ElevatedButton.icon(
+                                      onPressed: _completeOrder,
+                                      icon: const Icon(Icons.done_all),
+                                      label: const Text('Concluir'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orange,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                    ),
+                                    ElevatedButton.icon(
+                                      onPressed: () async {
+                                        setState(() => _isLoading = true);
+                                        final success = await _orderApi.processOrder(_order!.id);
+                                        setState(() => _isLoading = false);
+                                        if (success) {
+                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pedido processado!')));
+                                          await _loadOrderDetails();
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erro ao processar pedido.')));
+                                        }
+                                      },
+                                      icon: const Icon(Icons.settings),
+                                      label: const Text('Processar'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blue,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                    ),
+                                    ElevatedButton.icon(
+                                      onPressed: _cancelOrder,
+                                      icon: const Icon(Icons.cancel),
+                                      label: const Text('Cancelar'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                       ),
                                     ),
                                   ],
                                 ),
-                            ],
-                          ),
-                        ),
-        ),
-      );
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: PopupMenuButton<String>(
+                                    icon: const Icon(Icons.more_vert, color: Colors.black87),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    onSelected: (value) {
+                                      switch (value) {
+                                        case 'status':
+                                          _showEditStatusDialog();
+                                          break;
+                                        case 'itens':
+                                          _showEditItemsDialog();
+                                          break;
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      PopupMenuItem(
+                                        value: 'status',
+                                        child: Row(
+                                          children: const [
+                                            Icon(Icons.edit, color: Colors.blue),
+                                            SizedBox(width: 8),
+                                            Text('Editar Status'),
+                                          ],
+                                        ),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'itens',
+                                        child: Row(
+                                          children: const [
+                                            Icon(Icons.edit_note, color: Colors.orange),
+                                            SizedBox(width: 8),
+                                            Text('Editar Itens'),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+    ),
+  );
     }
 
     Widget _buildOrderHeader() {
       final order = _order!;
+      // Mapeia status para label e cor igual statusOptions
+      final statusMap = {
+        'PENDING': {'label': 'PENDENTE', 'color': Colors.orange},
+        'APPROVED': {'label': 'APROVADO', 'color': Colors.blue},
+        'CANCELED': {'label': 'CANCELADO', 'color': Colors.red},
+        'COMPLETED': {'label': 'APROVADO', 'color': Colors.green},
+      };
+      final statusInfo = statusMap[order.status] ?? {'label': order.status, 'color': Colors.grey};
+      final statusLabel = statusInfo['label'] as String;
+      final statusColor = statusInfo['color'] as Color;
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -805,13 +837,32 @@ import '../../components/navBar.dart';
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Status: ${order.status}',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'Status: ',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              statusLabel,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -832,23 +883,36 @@ import '../../components/navBar.dart';
               children: [
                 Column(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'ATIVO',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
+                    Builder(
+                      builder: (context) {
+                        // Mapeia status para cor e label
+                        final statusMap = {
+                          'PENDING': {'label': 'PENDENTE', 'color': Colors.orange},
+                          'APPROVED': {'label': 'APROVADO', 'color': Colors.blue},
+                          'CANCELED': {'label': 'CANCELADO', 'color': Colors.red},
+                          'COMPLETED': {'label': 'APROVADO', 'color': Colors.green},
+                        };
+                        final status = order.status;
+                        final statusInfo = statusMap[status] ?? {'label': status, 'color': Colors.grey};
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (statusInfo['color'] as Color).withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            statusInfo['label'] as String,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -891,37 +955,7 @@ import '../../components/navBar.dart';
                     ),
                   ],
                 ),
-                Column(
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.update,
-                          color: Colors.blue,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatDate(order.lastUpdate),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Última atualização',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
+                // Coluna de 'Última atualização' removida
               ],
             ),
           ],
