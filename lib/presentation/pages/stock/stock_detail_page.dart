@@ -470,61 +470,8 @@ class _StockDetailPageState extends State<StockDetailPage> {
                       ),
                     const SizedBox(height: 20),
 
-                    // Botões de ação
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              // TODO: Implementar edição
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Funcionalidade em desenvolvimento',
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.edit),
-                            label: const Text('Editar'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.infoLight,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              // TODO: Implementar movimentações
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Funcionalidade em desenvolvimento',
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.swap_horiz),
-                            label: const Text('Movimentar'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.infoLight,
-                              side: BorderSide(color: AppColors.infoLight),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
+                    // Botões de ação ocultados a pedido: Editar e Movimentar
+                    const SizedBox.shrink(),
                   ],
                 ),
               ),
