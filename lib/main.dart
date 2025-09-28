@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'presentation/pages/loginPage.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/pages/menu.dart';
-import 'presentation/pages/user/registrationPage.dart';
+import 'presentation/pages/products/registrationPage.dart';
 import 'presentation/pages/user/user_management_page.dart';
 import 'presentation/pages/order/order_management_page.dart';
 import 'presentation/pages/user/assistants_list_page.dart';
@@ -11,7 +11,15 @@ import 'presentation/pages/stock/stock_list_page.dart';
 import 'presentation/pages/stock/stock_detail_page.dart';
 import 'presentation/pages/user/user_register_page.dart';
 import 'presentation/pages/supplier/registration_supplier_page.dart';
-import 'presentation/pages/supplier/list_supplier_page.dart';
+import 'presentation/pages/supplier/list_supplier_simple.dart';
+import 'presentation/pages/supplier/supplier_details_page.dart';
+import 'presentation/pages/user/user_profile.dart';
+import 'presentation/pages/adiminMenu.dart';
+import 'presentation/pages/user/select_user_menu.dart';
+import 'presentation/pages/order/order_form_page.dart';
+import 'presentation/pages/order/order_detail_page.dart';
+import 'presentation/pages/user/change_password.dart';
+
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -42,7 +50,13 @@ class MyApp extends StatelessWidget {
             case '/menu':
               builder = (context) => const MenuPage();
               break;
-            case '/product_register':
+            case '/admin_menu':
+              builder = (context) => const AdiminMenuPage();
+              break;
+            case '/select_user_menu':
+              builder = (context) => const SelectUserMenu();
+              break;
+            case '/register_product':
               builder = (context) => const RegistrationPage();
               break;
             case '/user_management':
@@ -64,7 +78,8 @@ class MyApp extends StatelessWidget {
               final args = settings.arguments as Map<String, dynamic>?;
               final id = args?['id']?.toString();
               final data = args?['data'] as Map<String, dynamic>?;
-              builder = (context) => StockDetailPage(itemId: id, itemData: data);
+              builder = (context) =>
+                  StockDetailPage(itemId: id, itemData: data);
               break;
             case '/user_register':
               builder = (context) => UserRegisterPage();
@@ -73,38 +88,64 @@ class MyApp extends StatelessWidget {
               builder = (context) => const RegistrationSupplierPage();
               break;
             case '/supplier_management':
-              builder = (context) => const ListSupplierPage();  
+              builder = (context) => const ListSupplierPage();
+              break;
+            case '/supplier_details':
+              final supplierId = settings.arguments as String?;
+              if (supplierId != null) {
+                builder = (context) => SupplierDetailsPage(supplierId: supplierId);
+              } else {
+                builder = (context) => const ListSupplierPage();
+              }
+              break;
+            case '/changePassword':
+              builder = (context) => const ChangePassword();
+              break;
+            case '/user_profile':
+              builder = (context) => const UserProfile();
+              break;
+            case '/order_form':
+              builder = (context) => OrderFormPage();
+              break;
+            case '/order_detail':
+              // Aceita tanto String quanto int como argumento
+              final arg = settings.arguments;
+              int? orderId;
+              if (arg is int) {
+                orderId = arg;
+              } else if (arg is String) {
+                orderId = int.tryParse(arg);
+              } else if (arg is Map && arg['orderId'] != null) {
+                orderId = arg['orderId'] is int ? arg['orderId'] : int.tryParse(arg['orderId'].toString());
+              }
+              if (orderId != null) {
+                builder = (context) => OrderDetailPage(orderId: orderId!);
+              } else {
+                builder = (context) => const OrderManagementPage();
+              }
               break;
             default:
               builder = (context) => const MenuPage();
-            
+              break;
           }
           return PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              const begin = Offset(1.0, 0.0);
-              const end = Offset.zero;
-              final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.ease));
-              return SlideTransition(
-                position: animation.drive(tween),
-                child: child,
-              );
-            },
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                builder(context),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  const begin = Offset(1.0, 0.0);
+                  const end = Offset.zero;
+                  final tween = Tween(
+                    begin: begin,
+                    end: end,
+                  ).chain(CurveTween(curve: Curves.ease));
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: child,
+                  );
+                },
             settings: settings,
           );
-        },
-        routes: {
-          '/login': (context) => const LoginPage(),
-          '/menu': (context) => const MenuPage(),
-          '/registration': (context) => const RegistrationPage(),
-          '/user_management': (context) => const UserManagementPage(),
-          '/order_management': (context) => const OrderManagementPage(),
-          '/assistants': (context) => const AssistantsListPage(),
-          '/managers': (context) => const ManagersListPage(),
-          '/stock': (context) => const StockListPage(),
-          '/user_register': (context) => UserRegisterPage(),
-          '/supplier_register': (context) => const RegistrationSupplierPage(),
-          '/supplier_management': (context) => const ListSupplierPage(),
         },
       ),
     );

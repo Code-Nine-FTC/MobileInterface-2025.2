@@ -14,19 +14,10 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<User?> login(String email, String password) async {
     try {
       final response = await apiDataSource.login(email, password);
-      
-      final token = response['token'];
-      final user = UserModel.fromJson(response['user']);
-
-      if (token == null) {
-        throw Exception('Token não recebido do servidor');
-      }
-
-      await storageService.saveToken(token);
-      return user;
+      return response;
     } catch (e) {
       // se der erro no login garante que qualquer coisa em token seja removida
-      await storageService.deleteToken();
+      await logout();
       return null;
     }
   }
@@ -38,18 +29,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<User?> getCurrentUser() async {
+    final user = await storageService.getUser();
     final token = await storageService.getToken();
-    if (token == null) {
+    if (user == null || token == null) {
+      await logout();
       return null;
     }
-
-    try {
-      final userData = await apiDataSource.getProfile(token);
-      return UserModel.fromJson(userData);
-    } catch (e) {
-      // se for invalido ou expirado ele remove o token
-      await storageService.deleteToken();
-      return null;
-    }
+    return user;
   }
 }

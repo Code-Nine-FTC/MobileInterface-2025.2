@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import '../../components/standartScreen.dart';
 import '../../components/navBar.dart';
 
-class UserManagementPage extends StatefulWidget {
-  const UserManagementPage({super.key});
+class SelectUserMenu extends StatefulWidget {
+  const SelectUserMenu({super.key});
 
   @override
-  State<UserManagementPage> createState() => _UserManagementPageState();
+  State<SelectUserMenu> createState() => _SelectUserMenuState();
 }
 
-class _UserManagementPageState extends State<UserManagementPage> {
+class _SelectUserMenuState extends State<SelectUserMenu> {
   int _selectedIndex = 0;
 
   void _onNavTap(int index) {
@@ -26,55 +26,53 @@ class _UserManagementPageState extends State<UserManagementPage> {
     }
   }
 
-@override
-Widget build(BuildContext context) {
-  return StandardScreen(
-    title: 'Gestão de Usuários',
-    showBackButton: false,
-    bottomNavigationBar: CustomNavbar(
-      currentIndex: _selectedIndex,
-      onTap: _onNavTap,
-    ),
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-            ),         
-            ),
-          _buildSectionHeader('Selecione', Icons.manage_accounts_rounded),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildModernCard(
-                  icon: Icons.inventory_2_rounded,
-                  label: 'Almoxarifado',
-                  description: 'Gerenciar usuários do almoxarifado',
-                  color: Colors.orange,
-                  onTap: () => Navigator.pushNamed(context, '/select_user_menu'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildModernCard(
-                  icon: Icons.local_pharmacy_rounded,
-                  label: 'Farmácia',
-                  description: 'Gerenciar usuários da farmácia',
-                  color: const Color.fromARGB(255, 51, 194, 41),
-                  onTap: () => Navigator.pushNamed(context, '/select_user_menu'),
-                ),
-              ),
-            ],
-          ),
-        ],
+  @override
+  Widget build(BuildContext context) {
+    return StandardScreen(
+      title: 'Gestão de Usuários',
+      showBackButton: false,
+      bottomNavigationBar: CustomNavbar(
+        currentIndex: _selectedIndex,
+        onTap: _onNavTap,
       ),
-    ),
-  );
-}
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(width: double.infinity, decoration: BoxDecoration()),
+            _buildSectionHeader('Selecione', Icons.manage_accounts_rounded),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildModernCard(
+                    icon: Icons.manage_accounts_outlined,
+                    label: 'Gerentes',
+                    description: 'Gerenciar gerentes',
+                    color: const Color.fromARGB(255, 24, 176, 150),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/managers'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildModernCard(
+                    icon: Icons.manage_accounts_outlined,
+                    label: 'Assistentes',
+                    description: 'Gerenciar assistentes',
+                    color: const Color.fromARGB(255, 203, 38, 99),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/assistant_management'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
@@ -105,10 +103,7 @@ Widget build(BuildContext context) {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            color.withValues(alpha: 0.05),
-          ],
+          colors: [Colors.white, color.withValues(alpha: 0.05)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -118,10 +113,7 @@ Widget build(BuildContext context) {
             offset: const Offset(0, 6),
           ),
         ],
-        border: Border.all(
-          color: color.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.1), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -139,10 +131,7 @@ Widget build(BuildContext context) {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        color.withValues(alpha: 0.8),
-                        color,
-                      ],
+                      colors: [color.withValues(alpha: 0.8), color],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
@@ -153,11 +142,7 @@ Widget build(BuildContext context) {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: Colors.white, size: 24),
                 ),
                 const Spacer(),
                 Text(
@@ -171,10 +156,7 @@ Widget build(BuildContext context) {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
