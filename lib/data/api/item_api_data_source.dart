@@ -107,10 +107,14 @@ class ItemApiDataSource {
         
         if (data is List) {
           print('[ItemApiDataSource] É uma lista com ${data.length} itens');
-          return List<Map<String, dynamic>>.from(data);
+          final items = List<Map<String, dynamic>>.from(data);
+          print('[DEBUG] itemIds retornados em getItems: ${items.map((e) => e['itemId']).toList()}');
+          return items;
         } else if (data is Map && data.containsKey('content')) {
           print('[ItemApiDataSource] É um Map com content - content tem ${data['content'].length} itens');
-          return List<Map<String, dynamic>>.from(data['content']);
+          final items = List<Map<String, dynamic>>.from(data['content']);
+          print('[DEBUG] itemIds retornados em getItems: ${items.map((e) => e['itemId']).toList()}');
+          return items;
         } else {
           print('[ItemApiDataSource] Formato inesperado: $data');
           throw Exception('Formato de resposta inesperado: $data');

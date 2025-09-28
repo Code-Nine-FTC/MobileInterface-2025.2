@@ -26,10 +26,18 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    print('Order.fromJson recebido:');
+    print(json);
     int? parseId(dynamic val) {
       if (val == null) return null;
       if (val is int) return val;
       return int.tryParse(val.toString());
+    }
+    // Helper para garantir lista
+    List ensureList(dynamic value) {
+      if (value == null) return [];
+      if (value is List) return value;
+      return [value];
     }
     return Order(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '') ?? 0,
@@ -40,18 +48,18 @@ class Order {
       lastUpdate: json['lastUpdate'] != null ? DateTime.tryParse(json['lastUpdate'].toString()) ?? DateTime(2000) : DateTime(2000),
       createdById: parseId(json['createdBy']?['id']) ?? parseId(json['created_by_id']),
       lastUserId: parseId(json['lastUser']?['id']) ?? parseId(json['last_user_id']),
-      itemIds: (json['items'] as List?)?.map<int>((e) {
-        final id = e['itemId'];
+      itemIds: ensureList(json['items']).map<int>((e) {
+        final id = e['itemId'] ?? e['id'];
         if (id == null) return 0;
         if (id is int) return id;
         return int.tryParse(id.toString()) ?? 0;
-      }).toList() ?? [],
-      supplierIds: (json['suppliers'] as List?)?.map<int>((e) {
+      }).toList(),
+      supplierIds: ensureList(json['suppliers']).map<int>((e) {
         final id = e['id'];
         if (id == null) return 0;
         if (id is int) return id;
         return int.tryParse(id.toString()) ?? 0;
-      }).toList() ?? [],
+      }).toList(),
     );
   }
 

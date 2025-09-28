@@ -1,27 +1,76 @@
+import '../../domain/entities/order_item_response.dart';
 
 import '../../domain/entities/order.dart';
 import 'base_api_service.dart';
 
 class OrderApiDataSource extends BaseApiService {
+  /// Atualiza os itens de um pedido existente
+  Future<bool> updateOrderItems(int orderId, Map<int, int> itemQuantities, DateTime withdrawDay) async {
+  print('[DEBUG] IDs enviados para updateOrderItems: ${itemQuantities.keys.toList()}');
+    // Converte o mapa para Map<String, int> para o backend, se necessário
+    final Map<String, int> itemQuantitiesStr = itemQuantities.map((k, v) => MapEntry(k.toString(), v));
+    final body = {
+      'withdrawDay': withdrawDay.toIso8601String(),
+      'itemQuantities': itemQuantitiesStr,
+    };
+    print('[OrderApiDataSource] Enviando updateOrderItems: $body');
+    final response = await put(
+      '/orders/$orderId',
+      data: body,
+    );
+    return response.statusCode == 200;
+  }
+
+  Future<List<OrderItemResponse>> getOrderItemsByOrderId(int orderId) async {
+    final response = await get('/orders/items/$orderId');
+    print('Resposta bruta da API /orders/items/$orderId:');
+    print(response.data);
+    if (response.statusCode == 200 && response.data is List) {
+      return (response.data as List)
+          .map((e) => OrderItemResponse.fromJson(e))
+          .toList();
+    }
+    return [];
+  }
+  Future<bool> approveOrder(int orderId) async {
+    final response = await patch('/orders/approve/$orderId');
+    return response.statusCode == 200;
+  }
+
+  Future<bool> processOrder(int orderId) async {
+    final response = await patch('/orders/process/$orderId');
+    return response.statusCode == 200;
+  }
+
+  Future<bool> completeOrder(int orderId) async {
+    final response = await patch('/orders/complete/$orderId');
+    return response.statusCode == 200;
+  }
+  Future<bool> cancelOrder(int orderId) async {
+    final response = await patch('/orders/cancel/$orderId');
+    return response.statusCode == 200;
+  }
   Future<Order?> createOrder({
     required DateTime withdrawDay,
-    required List<int> itemIds,
-    required List<int> supplierIds,
-    required String status,
+    required Map<String, int> itemQuantities,
   }) async {
     final response = await post(
       '/orders',
       data: {
         'withdrawDay': withdrawDay.toIso8601String(),
-        'itemIds': itemIds,
-        'supplierIds': supplierIds,
-        'status': status,
+        'itemQuantities': itemQuantities,
       },
     );
     if (response.statusCode == 200) {
-      return Order.fromJson(response.data);
+      if (response.data is Map<String, dynamic>) {
+        return Order.fromJson(response.data);
+      } else {
+        // Qualquer outro tipo de resposta (String, null, etc): considera sucesso
+        return null;
+      }
+    } else {
+      throw Exception('Erro ao criar pedido: ${response.data}');
     }
-    return null;
   }
 
   Future<Order?> updateOrderStatus({
@@ -41,21 +90,34 @@ class OrderApiDataSource extends BaseApiService {
   Future<List<Order>> getOrders({
     int? orderId,
     String? status,
-    int? createdById,
-    int? lastUserId,
+    int? userId,
+    int? supplierId,
+    int? sectionId,
   }) async {
-    final queryParameters = <String, dynamic>{};
-    if (orderId != null) queryParameters['orderId'] = orderId;
-    if (status != null && status.isNotEmpty) queryParameters['status'] = status;
-    if (createdById != null) queryParameters['createdById'] = createdById;
-    if (lastUserId != null) queryParameters['lastUserId'] = lastUserId;
+    // Não enviar nenhum filtro para buscar todos os pedidos
     final response = await get(
       '/orders',
-      queryParameters: queryParameters.isNotEmpty ? queryParameters : null,
+      queryParameters: null,
     );
     if (response.statusCode == 200) {
-      final List<dynamic> data = response.data;
-      return data.map((e) => Order.fromJson(e)).toList();
+      final data = response.data;
+      print('Resposta bruta da API /orders:');
+      print(data);
+      if (data is List) {
+        return data.map((e) => Order.fromJson(e)).toList();
+      } else if (data is Map<String, dynamic>) {
+        // Tenta encontrar uma lista dentro do JSON (ex: 'content', 'orders', etc.)
+        final possibleListKeys = ['content', 'orders', 'data', 'results'];
+        for (final key in possibleListKeys) {
+          if (data[key] is List) {
+            return (data[key] as List).map((e) => Order.fromJson(e)).toList();
+          }
+        }
+        // Caso venha um único pedido como objeto
+        return [Order.fromJson(data)];
+      } else {
+        return [];
+      }
     }
     return [];
   }

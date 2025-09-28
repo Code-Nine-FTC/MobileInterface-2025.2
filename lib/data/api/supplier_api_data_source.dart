@@ -66,6 +66,7 @@ class SupplierApiDataSource {
 
       if (response.statusCode == 200) {
         final data = response.data;
+        print('[SupplierApiDataSource] getSupplierById($supplierId) => $data');
         if (data is Map<String, dynamic>) return data;
         throw Exception('Formato de resposta inesperado ao obter fornecedor $supplierId: ${response.data}');
       } else if (response.statusCode == 404) {

@@ -16,34 +16,44 @@ class OrderFormPage extends StatefulWidget {
 }
 
 class _OrderFormPageState extends State<OrderFormPage> {
+  void _onSavePressed() {
+    _saveOrder();
+  }
+  Future<void> _initSelectedItemsAndLoadData() async {
+    if (widget.order != null) {
+      final api = OrderApiDataSource();
+      final orderItems = await api.getOrderItemsByOrderId(widget.order!.id);
+      setState(() {
+        _selectedItemQuantities = {
+          for (final item in orderItems) item.id: item.quantity
+        };
+      });
+    }
+    await _loadInitialData();
+  }
   final _formKey = GlobalKey<FormState>();
   final SecureStorageService _storageService = SecureStorageService();
-  
-  late TextEditingController _statusController;
-  DateTime? _selectedWithdrawDay;
   List<Map<String, dynamic>> _availableItems = [];
   List<Map<String, dynamic>> _availableSuppliers = [];
-  List<int> _selectedItemIds = [];
+  Map<int, int> _selectedItemQuantities = {}; // itemId -> quantidade
   List<int> _selectedSupplierIds = [];
   bool _loading = false;
   bool _loadingData = false;
   String? _userRole;
 
-  final List<String> _statusOptions = [
-    'pendente',
-  ];
+  // final List<String> _statusOptions = [
+  //   'pendente',
+  // ];
 
   @override
   void initState() {
     super.initState();
-    _statusController = TextEditingController(text: widget.order?.status ?? 'pendente');
-    _selectedWithdrawDay = widget.order?.withdrawDay ?? DateTime.now().add(const Duration(days: 1));
-    _loadInitialData();
+    _initSelectedItemsAndLoadData();
   }
 
   @override
   void dispose() {
-    _statusController.dispose();
+  // _statusController.dispose();
     super.dispose();
   }
 
@@ -83,61 +93,11 @@ class _OrderFormPageState extends State<OrderFormPage> {
     }
   }
 
-  Future<void> _selectDateTime() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _selectedWithdrawDay ?? DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppColors.infoLight,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
 
-    if (date != null && mounted) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(_selectedWithdrawDay ?? DateTime.now()),
-        builder: (context, child) {
-          return Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: ColorScheme.light(
-                primary: AppColors.infoLight,
-                onPrimary: Colors.white,
-                surface: Colors.white,
-                onSurface: Colors.black,
-              ),
-            ),
-            child: child!,
-          );
-        },
-      );
-
-      if (time != null) {
-        setState(() {
-          _selectedWithdrawDay = DateTime(
-            date.year,
-            date.month,
-            date.day,
-            time.hour,
-            time.minute,
-          );
-        });
-      }
-    }
-  }
 
   void _showItemSelectionDialog() {
+    // Cópia local do mapa de itens selecionados
+  Map<int, int> localSelected = Map<int, int>.from(_selectedItemQuantities);
     showDialog(
       context: context,
       builder: (context) {
@@ -181,7 +141,6 @@ class _OrderFormPageState extends State<OrderFormPage> {
                               ? rawId
                               : (rawId is String ? int.tryParse(rawId) : null);
                           if (itemId == null) {
-
                             return Container(
                               margin: const EdgeInsets.symmetric(vertical: 4),
                               padding: const EdgeInsets.all(12),
@@ -193,7 +152,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
                               child: Text('ID inválido: ' + item.toString()),
                             );
                           }
-                          final isSelected = _selectedItemIds.contains(itemId);
+                          final isSelected = localSelected.containsKey(itemId);
                           return Container(
                             margin: const EdgeInsets.symmetric(vertical: 4),
                             decoration: BoxDecoration(
@@ -206,27 +165,93 @@ class _OrderFormPageState extends State<OrderFormPage> {
                             ),
                             child: CheckboxListTile(
                               value: isSelected,
-                              onChanged: (bool? value) {
-                                setDialogState(() {
-                                  if (value == true) {
-                                    _selectedItemIds.add(itemId);
-                                    // Se o item tiver fornecedor, adiciona na lista de fornecedores
-                                    final supplierId = item['supplierId'] ?? item['supplier_id'] ?? item['supplier']?['id'];
-                                    if (supplierId != null) {
-                                      final int? parsedSupplierId = supplierId is int ? supplierId : int.tryParse(supplierId.toString());
-                                      if (parsedSupplierId != null && !_selectedSupplierIds.contains(parsedSupplierId)) {
-                                        _selectedSupplierIds.add(parsedSupplierId);
+                              onChanged: (bool? value) async {
+                                if (value == true) {
+                                  final qty = await showDialog<int>(
+                                    context: context,
+                                    builder: (context) {
+                                      int tempQty = 1;
+                                      return AlertDialog(
+                                        title: Text('Quantidade para ${item['name'] ?? 'Item'}'),
+                                        content: TextFormField(
+                                          initialValue: '1',
+                                          keyboardType: TextInputType.number,
+                                          autofocus: true,
+                                          onChanged: (v) {
+                                            tempQty = int.tryParse(v) ?? 1;
+                                          },
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text('Cancelar'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () => Navigator.pop(context, tempQty),
+                                            child: const Text('Adicionar'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                  if (qty != null && qty > 0) {
+                                    setDialogState(() {
+                                      localSelected[itemId] = qty;
+                                      // Busca fornecedores do item de forma robusta
+                                      final Set<int> foundSupplierIds = {};
+                                      // Caso 1: lista de suppliers
+                                      final itemSuppliers = item['suppliers'] as List<dynamic>?;
+                                      if (itemSuppliers != null) {
+                                        for (var s in itemSuppliers) {
+                                          final sid = s is int ? s : (s['id'] ?? s['supplierId'] ?? s['supplier_id']);
+                                          if (sid != null) foundSupplierIds.add(int.tryParse(sid.toString()) ?? sid);
+                                        }
                                       }
-                                    }
-                                  } else {
-                                    _selectedItemIds.remove(itemId);
+                                      // Caso 2: supplierId direto
+                                      final supplierId = item['supplierId'] ?? item['supplier_id'];
+                                      if (supplierId != null) {
+                                        foundSupplierIds.add(int.tryParse(supplierId.toString()) ?? supplierId);
+                                      }
+                                      // Caso 3: supplier como objeto
+                                      final supplierObj = item['supplier'];
+                                      if (supplierObj != null) {
+                                        final sid = supplierObj is int ? supplierObj : (supplierObj['id'] ?? supplierObj['supplierId'] ?? supplierObj['supplier_id']);
+                                        if (sid != null) foundSupplierIds.add(int.tryParse(sid.toString()) ?? sid);
+                                      }
+                                      // Adiciona todos encontrados
+                                      for (final sid in foundSupplierIds) {
+                                        if (!_selectedSupplierIds.contains(sid)) {
+                                          _selectedSupplierIds.add(sid);
+                                        }
+                                      }
+                                    });
+                                    setState(() {});
                                   }
-                                });
-                                setState(() {});
+                                } else {
+                                  setDialogState(() {
+                                    localSelected.remove(itemId);
+                                    // Remove fornecedores não mais vinculados a nenhum item selecionado
+                                    final remainingSupplierIds = <int>{};
+                                    localSelected.forEach((key, value) {
+                                      final itemObj = _availableItems.firstWhere(
+                                        (i) => (i['id'] ?? i['itemId']) == key,
+                                        orElse: () => <String, dynamic>{},
+                                      );
+                                      if (itemObj['suppliers'] != null) {
+                                        for (var s in itemObj['suppliers']) {
+                                          final sid = s is int ? s : (s['id'] ?? s['supplierId']);
+                                          if (sid != null) remainingSupplierIds.add(sid);
+                                        }
+                                      }
+                                    });
+                                    _selectedSupplierIds.removeWhere((sid) => !remainingSupplierIds.contains(sid));
+                                  });
+                                  setState(() {});
+                                }
                               },
                               activeColor: AppColors.infoLight,
                               title: Text(
-                                item['name']?.toString() ?? 'Item sem nome',
+                                '${item['name']?.toString() ?? 'Item sem nome'}${isSelected ? '  x${localSelected[itemId]}' : ''}',
                                 style: TextStyle(
                                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                                 ),
@@ -252,9 +277,8 @@ class _OrderFormPageState extends State<OrderFormPage> {
                           child: OutlinedButton(
                             onPressed: () {
                               setDialogState(() {
-                                _selectedItemIds.clear();
+                                localSelected.clear();
                               });
-                              setState(() {});
                             },
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(color: Colors.grey[400]!),
@@ -269,7 +293,12 @@ class _OrderFormPageState extends State<OrderFormPage> {
                         Expanded(
                           flex: 2,
                           child: ElevatedButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () {
+                              setState(() {
+                                _selectedItemQuantities = Map<int, int>.from(localSelected);
+                              });
+                              Navigator.pop(context);
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.infoLight,
                               foregroundColor: Colors.white,
@@ -277,7 +306,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: Text('Confirmar (${_selectedItemIds.length})'),
+                            child: Text('Confirmar (${localSelected.length})'),
                           ),
                         ),
                       ],
@@ -424,44 +453,33 @@ class _OrderFormPageState extends State<OrderFormPage> {
     );
   }
 
-  String _getStatusDisplayName(String status) {
-    switch (status.toLowerCase()) {
-      case 'pendente': return 'PENDENTE';
-      default: return status;
-    }
-  }
+
 
   Future<void> _saveOrder() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    if (_selectedWithdrawDay == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecione a data de retirada')),
-      );
-      return;
-    }
-
-    if (_selectedItemIds.isEmpty) {
+    if (_selectedItemQuantities.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Selecione pelo menos um item')),
       );
       return;
     }
-
     setState(() => _loading = true);
     final api = OrderApiDataSource();
     try {
+      Map<String, int> itemQuantities = {};
+      _selectedItemQuantities.forEach((itemId, qty) {
+        itemQuantities[itemId.toString()] = qty;
+      });
       if (widget.order == null) {
         await api.createOrder(
-          withdrawDay: _selectedWithdrawDay!,
-          itemIds: _selectedItemIds.map((id) => id.toInt()).toList(),
-          supplierIds: _selectedSupplierIds.map((id) => id.toInt()).toList(),
-          status: _statusController.text,
+          withdrawDay: DateTime.now().add(const Duration(days: 1)),
+          itemQuantities: itemQuantities,
         );
       } else {
-        await api.updateOrderStatus(
-          orderId: widget.order!.id,
-          status: _statusController.text,
+        await api.updateOrderItems(
+          widget.order!.id,
+          _selectedItemQuantities,
+          widget.order!.withdrawDay,
         );
       }
       if (mounted) {
@@ -471,7 +489,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context, true);
+        Navigator.pushReplacementNamed(context, '/order_management');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -504,116 +522,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Card Status
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Colors.white, Colors.grey[50]!],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withValues(alpha: 0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
-                      ),
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [AppColors.infoLight.withValues(alpha: 0.8), AppColors.infoLight],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(Icons.info_outline, color: Colors.white, size: 20),
-                              ),
-                              const SizedBox(width: 16),
-                              const Text(
-                                'Informações Gerais',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          DropdownButtonFormField<String>(
-                            value: _statusController.text,
-                            decoration: InputDecoration(
-                              labelText: 'Status do Pedido',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              filled: true,
-                              fillColor: Colors.grey[50],
-                              prefixIcon: Icon(Icons.flag_outlined, color: AppColors.infoLight),
-                            ),
-                            items: _statusOptions.map((status) {
-                              return DropdownMenuItem(
-                                value: status,
-                                child: Text(_getStatusDisplayName(status)),
-                              );
-                            }).toList(),
-                            onChanged: (value) => _statusController.text = value ?? 'pendente',
-                            validator: (v) => v == null || v.isEmpty ? 'Selecione o status' : null,
-                          ),
-                          const SizedBox(height: 20),
-                          GestureDetector(
-                            onTap: _selectDateTime,
-                            child: Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey[300]!),
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.grey[50],
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.schedule, color: AppColors.infoLight),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Data de Retirada',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          _selectedWithdrawDay != null
-                                              ? '${_selectedWithdrawDay!.day.toString().padLeft(2, '0')}/${_selectedWithdrawDay!.month.toString().padLeft(2, '0')}/${_selectedWithdrawDay!.year} às ${_selectedWithdrawDay!.hour.toString().padLeft(2, '0')}:${_selectedWithdrawDay!.minute.toString().padLeft(2, '0')}'
-                                              : 'Selecione a data e hora',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: _selectedWithdrawDay != null ? Colors.black87 : Colors.grey[500],
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
+                    // ... Removido card de status e data de retirada ...
 
                     // Card Itens
                     Container(
@@ -652,20 +561,20 @@ class _OrderFormPageState extends State<OrderFormPage> {
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Text(
-                                  'Itens do Pedido (${_selectedItemIds.length})',
+                                  'Itens do Pedido (${_selectedItemQuantities.length})',
                                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                 ),
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: _selectedItemIds.isNotEmpty ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                                  color: _selectedItemQuantities.isNotEmpty ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  _selectedItemIds.isNotEmpty ? 'Selecionados' : 'Obrigatório',
+                                  _selectedItemQuantities.isNotEmpty ? 'Selecionados' : 'Obrigatório',
                                   style: TextStyle(
-                                    color: _selectedItemIds.isNotEmpty ? Colors.green[700] : Colors.red[700],
+                                    color: _selectedItemQuantities.isNotEmpty ? Colors.green[700] : Colors.red[700],
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -702,7 +611,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
                               ),
                             ),
                           ),
-                          if (_selectedItemIds.isNotEmpty) ...[
+                          if (_selectedItemQuantities.isNotEmpty) ...[
                             const SizedBox(height: 16),
                             Text(
                               'Itens Selecionados:',
@@ -716,10 +625,10 @@ class _OrderFormPageState extends State<OrderFormPage> {
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: _selectedItemIds.map((itemId) {
+                              children: _selectedItemQuantities.entries.map((entry) {
                                 final item = _availableItems.firstWhere(
-                                  (item) => item['id'] == itemId,
-                                  orElse: () => {'name': 'Item #$itemId'},
+                                  (item) => (item['id'] ?? item['itemId']) == entry.key,
+                                  orElse: () => {'name': 'Item #${entry.key}'},
                                 );
                                 return Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -729,7 +638,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
                                     border: Border.all(color: AppColors.infoLight.withOpacity(0.3)),
                                   ),
                                   child: Text(
-                                    item['name']?.toString() ?? 'Item #$itemId',
+                                    '${item['name']?.toString() ?? 'Item #${entry.key}'}  x${entry.value}',
                                     style: TextStyle(
                                       color: AppColors.infoLight,
                                       fontSize: 12,
@@ -772,7 +681,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [Colors.purple.withOpacity(0.8), Colors.purple],
+                                    colors: [AppColors.infoLight.withOpacity(0.8), AppColors.infoLight],
                                   ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -785,51 +694,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
                                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  'Selecione',
-                                  style: TextStyle(
-                                    color: Colors.blue[700],
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
                             ],
-                          ),
-                          const SizedBox(height: 16),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: _showSupplierSelectionDialog,
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.purple.withOpacity(0.3)),
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.purple.withOpacity(0.05),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.business_center, color: Colors.purple),
-                                    const SizedBox(width: 12),
-                                    const Expanded(
-                                      child: Text(
-                                        'Selecionar Fornecedores',
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                    const Icon(Icons.arrow_forward_ios, color: Colors.purple, size: 16),
-                                  ],
-                                ),
-                              ),
-                            ),
                           ),
                           if (_selectedSupplierIds.isNotEmpty) ...[
                             const SizedBox(height: 16),
@@ -850,17 +715,23 @@ class _OrderFormPageState extends State<OrderFormPage> {
                                   (supplier) => supplier['id'] == supplierId,
                                   orElse: () => {'name': 'Fornecedor #$supplierId'},
                                 );
+                                final supplierName =
+                                  (supplier['name']?.toString().isNotEmpty ?? false)
+                                    ? supplier['name'].toString()
+                                    : (supplier['nome']?.toString().isNotEmpty ?? false)
+                                        ? supplier['nome'].toString()
+                                        : 'Fornecedor #$supplierId';
                                 return Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: Colors.purple.withOpacity(0.1),
+                                    color: AppColors.infoLight.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                                    border: Border.all(color: AppColors.infoLight.withOpacity(0.3)),
                                   ),
                                   child: Text(
-                                    supplier['name']?.toString() ?? 'Fornecedor #$supplierId',
-                                    style: const TextStyle(
-                                      color: Colors.purple,
+                                    supplierName,
+                                    style: TextStyle(
+                                      color: AppColors.infoLight,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -921,20 +792,15 @@ class _OrderFormPageState extends State<OrderFormPage> {
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
                           ),
-                          onPressed: _loading ? null : _saveOrder,
+                          onPressed: _loading ? null : _onSavePressed,
                         ),
                       ),
                     ),
-
-                    const SizedBox(height: 20),
                   ],
                 ),
               ),
             ),
     );
-  }}
+  }
+}
