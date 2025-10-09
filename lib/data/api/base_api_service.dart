@@ -3,8 +3,8 @@ import '../../core/utils/secure_storage_service.dart';
 
 class BaseApiService {
   // Método para PATCH
-  Future<Response> patch(String path, {dynamic data}) async {
-    return await _dio.patch(path, data: data);
+  Future<Response> patch(String path, {dynamic data, Options? options}) async {
+    return await _dio.patch(path, data: data, options: options);
   }
   late final Dio _dio;
   final SecureStorageService _storage = SecureStorageService();
