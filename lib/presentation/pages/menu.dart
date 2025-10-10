@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../components/standartScreen.dart';
 import '../components/navBar.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/secure_storage_service.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
@@ -12,9 +13,36 @@ class MenuPage extends StatefulWidget {
 
 class _MenuPageState extends State<MenuPage> {
   int _selectedIndex = 0;
+  bool _isPharmacyUser = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUserSection();
+  }
+
+  Future<void> _checkUserSection() async {
+    final storage = SecureStorageService();
+    final user = await storage.getUser();
+    
+    setState(() {
+      // sessionId armazena o ID da seção do usuário
+      _isPharmacyUser = user?.sessionId == '2';
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return StandardScreen(
       title: 'Menu Principal',
       showBackButton: false,
@@ -135,15 +163,20 @@ class _MenuPageState extends State<MenuPage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: _buildModernCard(
-                    icon: Icons.calendar_today_rounded,
-                    label: 'Validade',
-                    description: 'Controle de vencimentos',
-                    color: Colors.red,
-                    onTap: () => Navigator.pushNamed(context, '/pharmacy/expiry'),
-                  ),
-                ),
+                // Mostra o card de Validade apenas para usuários da seção 2 (Farmácia)
+                if (_isPharmacyUser)
+                  Expanded(
+                    child: _buildModernCard(
+                      icon: Icons.calendar_today_rounded,
+                      label: 'Validade',
+                      description: 'Controle de vencimentos',
+                      color: Colors.red,
+                      onTap: () => Navigator.pushNamed(context, '/pharmacy/expiry'),
+                    ),
+                  )
+                else
+                  // Espaço vazio para manter o layout consistente
+                  const Expanded(child: SizedBox()),
               ],
             ),
           ],

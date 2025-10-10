@@ -11,15 +11,7 @@ import '../../components/standartScreen.dart';
 class ExpiryScreen extends StatelessWidget {
   const ExpiryScreen({Key? key}) : super(key: key);
 
-  Future<void> _checkUserAccess() async {
-    final storage = SecureStorageService();
-    final user = await storage.getUser();
-    print('[ExpiryScreen] Dados do usuário: ID=${user?.id}, Nome=${user?.name}, Role=${user?.role}, SessionId=${user?.sessionId}');
-    print('[ExpiryScreen] Verificando permissões de acesso à Farmácia...');
-  }
-
   Dio _createDio() {
-    print('[ExpiryScreen] Criando instância do Dio');
     final dio = Dio(
       BaseOptions(
         baseUrl: 'http://10.0.2.2:8080',
@@ -32,25 +24,11 @@ class ExpiryScreen extends StatelessWidget {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          print('[ExpiryScreen] Interceptor: Buscando token...');
           final token = await storage.getToken();
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
-            print('[ExpiryScreen] Interceptor: Token adicionado ao header');
-            print('[ExpiryScreen] Interceptor: Token = ${token.substring(0, 20)}...');
-          } else {
-            print('[ExpiryScreen] Interceptor: AVISO - Token não encontrado!');
           }
-          print('[ExpiryScreen] Interceptor: URL = ${options.uri}');
-          print('[ExpiryScreen] Interceptor: Headers = ${options.headers}');
           handler.next(options);
-        },
-        onError: (error, handler) {
-          print('[ExpiryScreen] Interceptor: ERRO na requisição');
-          print('[ExpiryScreen] Interceptor: Status Code = ${error.response?.statusCode}');
-          print('[ExpiryScreen] Interceptor: Mensagem = ${error.message}');
-          print('[ExpiryScreen] Interceptor: Response Data = ${error.response?.data}');
-          handler.next(error);
         },
       ),
     );
@@ -60,10 +38,9 @@ class ExpiryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    _checkUserAccess();
     return BlocProvider(
       create: (context) => PharmacyCubit(PharmacyApiDataSource(_createDio()))
-        ..fetchExpiryData(365), // Usa 365 dias para pegar todos os itens a vencer
+        ..fetchExpiryData(365),
       child: const ExpiryScreenContent(),
     );
   }
@@ -176,11 +153,6 @@ class _ExpiryScreenContentState extends State<ExpiryScreenContent>
           }
 
           if (state is PharmacyLoaded) {
-            print('[ExpiryScreen] Renderizando PharmacyLoaded:');
-            print('  - Vencidos: ${state.expiredItems.length} itens');
-            print('  - A Vencer: ${state.expiringSoonItems.length} itens');
-            print('  - Filtro: ${state.selectedDays} dias');
-            
             return Column(
               children: [
                 const SizedBox(height: 20),
@@ -335,10 +307,6 @@ class _ExpiryScreenContentState extends State<ExpiryScreenContent>
   }
 
   Widget _buildItemsList(PharmacyLoaded state) {
-    print('[ExpiryScreen] _buildItemsList chamado:');
-    print('  - state.expiredItems: ${state.expiredItems.length}');
-    print('  - state.expiringSoonItems: ${state.expiringSoonItems.length}');
-    
     return Expanded(
       child: TabBarView(
         controller: _tabController,
@@ -366,8 +334,6 @@ class _ExpiryScreenContentState extends State<ExpiryScreenContent>
     required bool isLoadingMore,
     required VoidCallback onLoadMore,
   }) {
-    print('[ExpiryScreen] _buildItemList: ${items.length} itens, hasMore=$hasMore');
-    
     if (items.isEmpty) {
       return Center(
         child: Column(
@@ -401,7 +367,6 @@ class _ExpiryScreenContentState extends State<ExpiryScreenContent>
 
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
-        // Detecta quando o usuário está próximo do final da lista
         if (!isLoadingMore &&
             hasMore &&
             scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
@@ -411,9 +376,8 @@ class _ExpiryScreenContentState extends State<ExpiryScreenContent>
       },
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        itemCount: items.length + (hasMore ? 1 : 0), // +1 para o indicador de loading
+        itemCount: items.length + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
-          // Mostra o indicador de loading no final
           if (index == items.length) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
@@ -436,7 +400,6 @@ class _ExpiryScreenContentState extends State<ExpiryScreenContent>
     final isExpired = item.expireDate != null && item.expireDate!.isBefore(DateTime.now());
     final statusColor = isExpired ? Colors.red : Colors.orange;
     
-    // Calcula os dias restantes
     String statusText;
     if (isExpired) {
       final daysExpired = DateTime.now().difference(item.expireDate!).inDays;
@@ -509,6 +472,7 @@ class _ExpiryScreenContentState extends State<ExpiryScreenContent>
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
@@ -522,6 +486,27 @@ class _ExpiryScreenContentState extends State<ExpiryScreenContent>
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: statusColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showArchiveDialog(context, item),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Icon(
+                        Icons.delete_outline_rounded,
+                        color: Colors.red.shade600,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
@@ -564,6 +549,234 @@ class _ExpiryScreenContentState extends State<ExpiryScreenContent>
         ),
       ),
     );
+  }
+
+  void _showArchiveDialog(BuildContext context, dynamic item) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.red.shade600,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Excluir Item',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Deseja realmente excluir este item permanentemente?',
+              style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${item.itemTypeName} - ${item.sectionTitle}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_rounded,
+                    color: Colors.red.shade700,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Esta ação é permanente e não pode ser desfeita!',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red.shade900,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await _deleteItem(context, item);
+            },
+            icon: const Icon(Icons.delete_outline_rounded, size: 18),
+            label: const Text('Excluir'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteItem(BuildContext context, dynamic item) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text('Excluindo item...'),
+          ],
+        ),
+        backgroundColor: AppColors.primaryLight,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+
+    try {
+      await context.read<PharmacyCubit>().deleteItem(item.id);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('${item.name} excluído com sucesso!'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text('Erro ao excluir item. Tente novamente.'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade600,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildInfoItem({

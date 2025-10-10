@@ -85,29 +85,13 @@ class PharmacyCubit extends Cubit<PharmacyState> {
 
   Future<void> fetchExpiryData(int days) async {
     try {
-      print('[PharmacyCubit] Iniciando busca de dados de validade para $days dias');
       emit(PharmacyLoading());
 
-      print('[PharmacyCubit] Buscando resumo de vencimentos...');
       final summary = await _pharmacyApiDataSource.getExpirySummary(days);
-      print('[PharmacyCubit] Resumo recebido: Vencidos=${summary.expiredCount}, A vencer=${summary.expiringSoonCount}');
-
-      print('[PharmacyCubit] Buscando primeira página de vencimentos...');
       final lists = await _pharmacyApiDataSource.getExpiryList(days, page: 0, size: _pageSize);
-      print('[PharmacyCubit] Lista recebida - Vencidos: ${lists['expired']?.length ?? 0}, A vencer: ${lists['expiringSoon']?.length ?? 0}');
 
       final expiredItems = lists['expired'] ?? [];
       final expiringSoonItems = lists['expiringSoon'] ?? [];
-
-      print('[PharmacyCubit] DEBUG - Itens vencidos:');
-      for (var item in expiredItems.take(3)) {
-        print('  - ${item.name}: ${item.expireDate}');
-      }
-      
-      print('[PharmacyCubit] DEBUG - Itens a vencer:');
-      for (var item in expiringSoonItems.take(3)) {
-        print('  - ${item.name}: ${item.expireDate}');
-      }
 
       emit(PharmacyLoaded(
         summary: summary,
@@ -117,9 +101,7 @@ class PharmacyCubit extends Cubit<PharmacyState> {
         hasMoreExpired: expiredItems.length >= _pageSize,
         hasMoreExpiringSoon: expiringSoonItems.length >= _pageSize,
       ));
-      print('[PharmacyCubit] Estado PharmacyLoaded emitido - Vencidos: ${expiredItems.length}, A vencer: ${expiringSoonItems.length}');
     } catch (e) {
-      print('[PharmacyCubit] ERRO ao buscar dados: $e');
       emit(PharmacyError(e.toString()));
     }
   }
@@ -133,7 +115,6 @@ class PharmacyCubit extends Cubit<PharmacyState> {
     }
 
     try {
-      print('[PharmacyCubit] Carregando mais itens vencidos...');
       emit(currentState.copyWith(isLoadingMore: true));
 
       final currentPage = (currentState.expiredItems.length / _pageSize).floor();
@@ -144,7 +125,6 @@ class PharmacyCubit extends Cubit<PharmacyState> {
       );
 
       final newExpiredItems = lists['expired'] ?? [];
-      print('[PharmacyCubit] ${newExpiredItems.length} novos itens vencidos carregados');
 
       emit(currentState.copyWith(
         expiredItems: [...currentState.expiredItems, ...newExpiredItems],
@@ -152,7 +132,6 @@ class PharmacyCubit extends Cubit<PharmacyState> {
         isLoadingMore: false,
       ));
     } catch (e) {
-      print('[PharmacyCubit] ERRO ao carregar mais vencidos: $e');
       emit(currentState.copyWith(isLoadingMore: false));
     }
   }
@@ -166,7 +145,6 @@ class PharmacyCubit extends Cubit<PharmacyState> {
     }
 
     try {
-      print('[PharmacyCubit] Carregando mais itens a vencer...');
       emit(currentState.copyWith(isLoadingMore: true));
 
       final currentPage = (currentState.expiringSoonItems.length / _pageSize).floor();
@@ -177,7 +155,6 @@ class PharmacyCubit extends Cubit<PharmacyState> {
       );
 
       final newExpiringSoonItems = lists['expiringSoon'] ?? [];
-      print('[PharmacyCubit] ${newExpiringSoonItems.length} novos itens a vencer carregados');
 
       emit(currentState.copyWith(
         expiringSoonItems: [...currentState.expiringSoonItems, ...newExpiringSoonItems],
@@ -185,7 +162,6 @@ class PharmacyCubit extends Cubit<PharmacyState> {
         isLoadingMore: false,
       ));
     } catch (e) {
-      print('[PharmacyCubit] ERRO ao carregar mais a vencer: $e');
       emit(currentState.copyWith(isLoadingMore: false));
     }
   }
@@ -195,6 +171,40 @@ class PharmacyCubit extends Cubit<PharmacyState> {
       fetchExpiryData((state as PharmacyLoaded).selectedDays);
     } else {
       fetchExpiryData(7);
+    }
+  }
+
+  Future<void> deleteItem(int itemId) async {
+    final currentState = state;
+    if (currentState is! PharmacyLoaded) {
+      return;
+    }
+
+    try {
+      await _pharmacyApiDataSource.deleteItem(itemId);
+
+      final updatedExpiredItems = currentState.expiredItems
+          .where((item) => item.id != itemId)
+          .toList();
+      final updatedExpiringSoonItems = currentState.expiringSoonItems
+          .where((item) => item.id != itemId)
+          .toList();
+      final newExpiredCount = currentState.summary.expiredCount - 
+          (currentState.expiredItems.length - updatedExpiredItems.length);
+      final newExpiringSoonCount = currentState.summary.expiringSoonCount - 
+          (currentState.expiringSoonItems.length - updatedExpiringSoonItems.length);
+      final updatedSummary = ExpirySummaryModel(
+        expiredCount: newExpiredCount > 0 ? newExpiredCount : 0,
+        expiringSoonCount: newExpiringSoonCount > 0 ? newExpiringSoonCount : 0,
+      );
+
+      emit(currentState.copyWith(
+        summary: updatedSummary,
+        expiredItems: updatedExpiredItems,
+        expiringSoonItems: updatedExpiringSoonItems,
+      ));
+    } catch (e) {
+      rethrow;
     }
   }
 }

@@ -42,15 +42,15 @@ class ExpiryItemModel {
 
   factory ExpiryItemModel.fromJson(Map<String, dynamic> json) {
     return ExpiryItemModel(
-      id: json['id'] ?? 0,
+      id: json['itemId'] ?? json['id'] ?? 0,
       name: json['name'] ?? '',
       currentStock: (json['currentStock'] ?? 0).toDouble(),
-      measure: json['measure'] ?? '',
+      measure: json['measure'] ?? 'unidade',
       expireDate: json['expireDate'] != null
           ? DateTime.parse(json['expireDate'])
           : null,
       sectionId: json['sectionId'] ?? 0,
-      sectionTitle: json['sectionTitle'] ?? '',
+      sectionTitle: json['sectionName'] ?? json['sectionTitle'] ?? '',
       itemTypeId: json['itemTypeId'] ?? 0,
       itemTypeName: json['itemTypeName'] ?? '',
       minimumStock: (json['minimumStock'] ?? 0).toDouble(),
