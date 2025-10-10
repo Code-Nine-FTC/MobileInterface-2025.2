@@ -134,8 +134,16 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
                   ),
                 ),
                 
-                const SizedBox(width: 0),
-                
+                const SizedBox(width: 12),
+                  Expanded(
+                  child: _buildModernCard(
+                    icon: Icons.calendar_today_rounded,
+                    label: 'Validade',
+                    description: 'Controle de vencimentos',
+                    color: Colors.red,
+                    onTap: () => Navigator.pushNamed(context, '/pharmacy/expiry'),
+                  ),
+                ),
                 // Expanded(
                 //   child: _buildModernCard(
                 //     icon: Icons.local_shipping_rounded,
