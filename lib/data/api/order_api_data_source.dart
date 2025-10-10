@@ -1,7 +1,10 @@
+
+import 'dart:convert';
 import '../../domain/entities/order_item_response.dart';
 
 import '../../domain/entities/order.dart';
 import 'base_api_service.dart';
+import 'package:dio/dio.dart';
 
 class OrderApiDataSource extends BaseApiService {
   /// Atualiza os itens de um pedido existente
@@ -42,8 +45,13 @@ class OrderApiDataSource extends BaseApiService {
     return response.statusCode == 200;
   }
 
-  Future<bool> completeOrder(int orderId) async {
-    final response = await patch('/orders/complete/$orderId');
+  Future<bool> completeOrder(int orderId, DateTime withdrawDay) async {
+    final body = jsonEncode(withdrawDay.toIso8601String());
+    final response = await patch(
+      '/orders/complete/$orderId',
+      data: body,
+      options: Options(contentType: 'application/json'),
+    );
     return response.statusCode == 200;
   }
   Future<bool> cancelOrder(int orderId) async {

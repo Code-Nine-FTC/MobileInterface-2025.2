@@ -11,6 +11,7 @@ class Order {
   final int? lastUserId;
   final List<int> itemIds;
   final List<int> supplierIds;
+  final DateTime? completionDate;
 
   Order({
     required this.id,
@@ -23,6 +24,7 @@ class Order {
     this.lastUserId,
     required this.itemIds,
     required this.supplierIds,
+    this.completionDate,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -60,6 +62,7 @@ class Order {
         if (id is int) return id;
         return int.tryParse(id.toString()) ?? 0;
       }).toList(),
+      completionDate: json['completionDate'] != null ? DateTime.tryParse(json['completionDate'].toString()) : null,
     );
   }
 
@@ -74,5 +77,6 @@ class Order {
         'lastUserId': lastUserId,
         'itemIds': itemIds,
         'supplierIds': supplierIds,
+        'completionDate': completionDate?.toIso8601String(),
       };
 }
