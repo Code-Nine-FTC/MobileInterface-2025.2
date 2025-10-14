@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:dio/dio.dart';
 import '../../../data/api/pharmacy_api_data_source.dart';
+import '../../../data/api/base_api_service.dart';
 import '../../../logic/cubit/pharmacy_cubit.dart';
 import '../../../core/utils/secure_storage_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -11,35 +11,11 @@ import '../../components/standartScreen.dart';
 class ExpiryScreen extends StatelessWidget {
   const ExpiryScreen({Key? key}) : super(key: key);
 
-  Dio _createDio() {
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: 'http://10.0.2.2:8080',
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-      ),
-    );
-
-    final storage = SecureStorageService();
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          final token = await storage.getToken();
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          handler.next(options);
-        },
-      ),
-    );
-
-    return dio;
-  }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => PharmacyCubit(PharmacyApiDataSource(_createDio()))
+      create: (context) => PharmacyCubit(PharmacyApiDataSource(BaseApiService().dio))
         ..fetchExpiryData(365),
       child: const ExpiryScreenContent(),
     );
@@ -84,7 +60,8 @@ class _ExpiryScreenContentState extends State<ExpiryScreenContent>
       ],
       child: BlocBuilder<PharmacyCubit, PharmacyState>(
         builder: (context, state) {
-          if (state is PharmacyLoading) {
+          try {
+            if (state is PharmacyLoading) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -163,7 +140,21 @@ class _ExpiryScreenContentState extends State<ExpiryScreenContent>
             );
           }
 
-          return const SizedBox.shrink();
+            return const SizedBox.shrink();
+          } catch (e, st) {
+            // Log the failing state and stack to console to help diagnose Flutter web diagnostics issues
+            // (Sometimes a JS interop object leaks into the widget tree and breaks debug diagnostics.)
+            // Using print so it appears in the browser console / Dart devtools.
+            try {
+              print('ExpiryScreen build error: $e');
+              print('State runtimeType: ${state.runtimeType}');
+              print('State value: $state');
+            } catch (_) {
+              print('Failed to stringify state');
+            }
+            print(st);
+            rethrow;
+          }
         },
       ),
     );
