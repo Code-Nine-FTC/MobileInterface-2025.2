@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../core/utils/secure_storage_service.dart';
 
 class BaseApiService {
+  Dio get dio => _dio;
   // Método para PATCH
   Future<Response> patch(String path, {dynamic data, Options? options}) async {
     return await _dio.patch(path, data: data, options: options);
