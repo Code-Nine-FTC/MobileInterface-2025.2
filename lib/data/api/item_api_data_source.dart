@@ -166,4 +166,41 @@ class ItemApiDataSource {
       throw Exception('Falha ao buscar item: ${e.response?.data ?? e.message}');
     }
   }
+
+  Future<Map<String, dynamic>> getItemByQrCode(String route, String encryptedId) async {
+    try {
+      final response = await _apiService.get(route, queryParameters: {'code': encryptedId});
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) return data;
+        throw Exception('Formato de resposta inesperado ao obter item por QR: ${response.data}');
+      } else if (response.statusCode == 404) {
+        throw Exception('Item não encontrado por QR');
+      } else {
+        throw Exception('Falha ao buscar item por QR: ${response.data}');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw Exception('Item não encontrado por QR');
+      }
+      throw Exception('Falha ao buscar item por QR: ${e.response?.data ?? e.message}');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateItemStock(String id, Map<String, dynamic> payload) async {
+    try {
+      final response = await _apiService.put('/items/$id', data: payload);
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) return data;
+        throw Exception('Formato de resposta inesperado ao atualizar item $id: ${response.data}');
+      } else {
+        throw Exception('Falha ao atualizar item: ${response.data}');
+      }
+    } on DioException catch (e) {
+      throw Exception('Falha ao atualizar item: ${e.response?.data ?? e.message}');
+    }
+  }
 }

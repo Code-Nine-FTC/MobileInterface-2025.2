@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:flutter/services.dart';
+import 'scanner_page.dart';
+import 'package:printing/printing.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../components/standartScreen.dart';
 import '../../../data/api/item_api_data_source.dart';
@@ -390,10 +396,14 @@ class _StockDetailPageState extends State<StockDetailPage> {
                       title: 'Informações do Produto',
                       icon: Icons.info_outline,
                       children: [
-                        _modernInfoRow(
-                          'Código',
-                          _item?['id']?.toString() ?? '-',
-                          Icons.qr_code,
+                        // Tornar o código clicável para abrir o popup com QR
+                        InkWell(
+                          onTap: () => _showQrDialog(context),
+                          child: _modernInfoRow(
+                            'Código',
+                            _item?['id']?.toString() ?? '-',
+                            Icons.qr_code,
+                          ),
                         ),
                         _modernInfoRow(
                           'Validade',
@@ -639,6 +649,93 @@ class _StockDetailPageState extends State<StockDetailPage> {
       return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
     } catch (e) {
       return dateString;
+    }
+  }
+
+  Future<void> _showQrDialog(BuildContext context) async {
+    final encryptedId = _item?['qrCode']?.toString() ?? '-';
+    // Construir a rota completa que o backend espera
+    final code = '/items/qr?code=$encryptedId';
+    final name = _item?['name']?.toString() ?? 'Sem nome';
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(name),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              QrImageView(
+                data: code,
+                size: 160.0,
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () => _shareQr(code, name),
+              icon: const Icon(Icons.share),
+              label: const Text('Compartilhar'),
+            ),
+            TextButton.icon(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _printQrAsPdf(code, name);
+              },
+              icon: const Icon(Icons.print),
+              label: const Text('Imprimir'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Fechar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _shareQr(String code, String name) async {
+    try {
+      await Share.share('Produto: $name');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erro ao compartilhar')),
+      );
+    }
+  }
+
+  Future<void> _printQrAsPdf(String code, String name) async {
+    try {
+      // Gera um PDF simples com o QR usando o pacote printing/pdf
+      await Printing.layoutPdf(onLayout: (format) async {
+        final doc = pw.Document();
+
+        // Renderiza o QR em bytes
+  final qrPainter = QrPainter(data: code, version: QrVersions.auto, gapless: false);
+        final byteData = await qrPainter.toImageData(300);
+        final bytes = byteData!.buffer.asUint8List();
+
+        final image = pw.MemoryImage(bytes);
+
+        doc.addPage(pw.Page(build: (context) {
+          return pw.Column(children: [
+            pw.Text(name, style: pw.TextStyle(fontSize: 18)),
+            pw.SizedBox(height: 12),
+            pw.Image(image, width: 200, height: 200),
+          ]);
+        }));
+
+        return doc.save();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao imprimir: $e')),
+      );
     }
   }
 }
