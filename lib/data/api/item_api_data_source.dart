@@ -167,9 +167,9 @@ class ItemApiDataSource {
     }
   }
 
-  Future<Map<String, dynamic>> getItemByQrCode(String route, String encryptedId) async {
+  Future<Map<String, dynamic>> getItemByQrCode(String uri) async {
     try {
-      final response = await _apiService.get(route, queryParameters: {'code': encryptedId});
+      final response = await _apiService.get(uri);
 
       if (response.statusCode == 200) {
         final data = response.data;

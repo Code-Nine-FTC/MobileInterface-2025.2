@@ -19,7 +19,7 @@ import 'presentation/pages/user/select_user_menu.dart';
 import 'presentation/pages/order/order_form_page.dart';
 import 'presentation/pages/order/order_detail_page.dart';
 import 'presentation/pages/user/change_password.dart';
-
+import 'presentation/pages/scanner_page.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -123,6 +123,9 @@ class MyApp extends StatelessWidget {
               } else {
                 builder = (context) => const OrderManagementPage();
               }
+              break;
+            case '/scanner':
+              builder = (context) => const ScannerPage();
               break;
             default:
               builder = (context) => const MenuPage();

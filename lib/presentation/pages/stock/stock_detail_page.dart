@@ -4,7 +4,6 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart';
-import 'scanner_page.dart';
 import 'package:printing/printing.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../components/standartScreen.dart';
@@ -663,15 +662,40 @@ class _StockDetailPageState extends State<StockDetailPage> {
       builder: (context) {
         return AlertDialog(
           title: Text(name),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              QrImageView(
-                data: code,
-                size: 160.0,
-              ),
-              const SizedBox(height: 12),
-            ],
+          content: SizedBox(
+            width: 300,
+            child: Builder(
+              builder: (context) {
+                // Constrói o widget do QR de forma síncrona para evitar que LayoutBuilder
+                // seja executado durante cálculos intrínsecos do AlertDialog.
+                Widget qrChild;
+                try {
+                  qrChild = QrImageView(
+                    data: code,
+                    size: 160.0,
+                  );
+                } catch (e) {
+                  print('[StockDetail] Erro ao gerar QR: $e');
+                  qrChild = Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const SizedBox(height: 8),
+                      const Text('Não foi possível gerar o QR.'),
+                      const SizedBox(height: 8),
+                      Text('Detalhes: $e', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    ],
+                  );
+                }
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    qrChild,
+                    const SizedBox(height: 12),
+                  ],
+                );
+              },
+            ),
           ),
           actions: [
             TextButton.icon(
