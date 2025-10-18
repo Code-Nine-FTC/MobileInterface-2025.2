@@ -703,11 +703,11 @@ class _StockListPageState extends State<StockListPage> {
                               );
                             }
                             final item = _displayedItems[index];
-                            return Padding(
+                              return Padding(
                               padding: const EdgeInsets.only(bottom: 16.0),
                               child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
+                                onTap: () async {
+                                  final result = await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => StockDetailPage(
@@ -716,6 +716,9 @@ class _StockListPageState extends State<StockListPage> {
                                       ),
                                     ),
                                   );
+                                  if (result == true && mounted) {
+                                    _refreshItems();
+                                  }
                                 },
                                 child: Container(
                                   decoration: BoxDecoration(

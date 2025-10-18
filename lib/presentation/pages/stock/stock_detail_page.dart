@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_colors.dart';
@@ -24,18 +25,23 @@ class _StockDetailPageState extends State<StockDetailPage> {
   String? _error;
   String? _supplierName;
   String? _itemTypeName;
+  List<Map<String, dynamic>> _itemLosses = [];
   final SecureStorageService _storageService = SecureStorageService();
+  String? _userRole;
+  bool _dataChanged = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.itemData != null) {
-      _item = widget.itemData;
-      _loading = false;
-      _fetchAdditionalData();
-    } else {
-      _fetchItem();
-    }
+    _loadUserRole();
+    _fetchItem();
+  }
+
+  Future<void> _loadUserRole() async {
+    final user = await _storageService.getUser();
+    setState(() {
+      _userRole = user?.role;
+    });
   }
 
   Future<void> _fetchAdditionalData() async {
@@ -76,7 +82,15 @@ class _StockDetailPageState extends State<StockDetailPage> {
   }
 
   Future<void> _fetchItem() async {
-    if (widget.itemId == null || widget.itemId!.isEmpty) {
+    final targetId = (widget.itemId != null && widget.itemId!.isNotEmpty)
+        ? widget.itemId!
+        : (widget.itemData != null 
+            ? (widget.itemData!['id']?.toString() ?? widget.itemData!['itemId']?.toString())
+            : (_item != null 
+                ? (_item!['id']?.toString() ?? _item!['itemId']?.toString())
+                : null));
+
+    if (targetId == null || targetId.isEmpty) {
       setState(() {
         _error = 'ID do item não fornecido';
         _loading = false;
@@ -90,7 +104,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
     try {
       // Buscar dados do item
       final api = ItemApiDataSource();
-      final data = await api.getItemById(widget.itemId!);
+      final data = await api.getItemById(targetId);
 
       // Buscar nome do fornecedor se houver supplierId
       String? supplierName;
@@ -128,6 +142,17 @@ class _StockDetailPageState extends State<StockDetailPage> {
         _itemTypeName = itemTypeName;
         _loading = false;
       });
+
+      if (data.containsKey('lossHistory') && data['lossHistory'] is List) {
+        final list = List<Map<String, dynamic>>.from(
+          (data['lossHistory'] as List).map((e) => e is Map ? Map<String, dynamic>.from(e) : {'value': e})
+        );
+        setState(() {
+          _itemLosses = list;
+        });
+      } else {
+        await _fetchItemLosses();
+      }
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -136,345 +161,513 @@ class _StockDetailPageState extends State<StockDetailPage> {
     }
   }
 
+  Future<void> _fetchItemLosses() async {
+    try {
+      if (_item == null) return;
+      final api = ItemApiDataSource();
+      final losses = await api.getItemLosses(itemId: _item!['id']?.toString() ?? _item!['itemId']?.toString());
+      setState(() {
+        _itemLosses = losses;
+      });
+    } catch (e) {
+      print('Erro ao buscar perdas do item: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      bottomNavigationBar: CustomNavbar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-      ),
-      body: StandardScreen(
-        title: 'Detalhes do Produto',
-        showBackButton: true, // Adicione o botão voltar
-        child: _loading
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text(
-                      'Carregando detalhes...',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
-              )
-            : _error != null
-            ? Center(
-                child: Container(
-                  margin: const EdgeInsets.all(24),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.of(context).pop(_dataChanged);
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        bottomNavigationBar: CustomNavbar(
+          currentIndex: _selectedIndex,
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+        ),
+        body: StandardScreen(
+          title: 'Detalhes do Produto',
+          showBackButton: true,
+          child: _loading
+              ? const Center(
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        child: const Icon(
-                          Icons.error_outline,
-                          color: Colors.red,
-                          size: 48,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Ops! Algo deu errado',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
                       Text(
-                        'Erro ao carregar: $_error',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton.icon(
-                        onPressed: _fetchItem,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Tentar novamente'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.infoLight,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                        'Carregando detalhes...',
+                        style: TextStyle(color: Colors.grey),
                       ),
                     ],
                   ),
-                ),
-              )
-            : _item == null
-            ? Center(
-                child: Container(
-                  margin: const EdgeInsets.all(24),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
+                )
+              : _error != null
+                  ? Center(
+                      child: Container(
+                        margin: const EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        child: const Icon(
-                          Icons.search_off,
-                          color: Colors.orange,
-                          size: 48,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Item não encontrado',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'O produto que você procura não existe ou foi removido.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header com imagem/ícone e informações principais
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.infoLight.withValues(alpha: 0.8),
-                            AppColors.infoLight,
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withValues(alpha: 0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.infoLight.withValues(alpha: 0.3),
-                            blurRadius: 15,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(50),
+                              ),
+                              child: const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                                size: 48,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Ops! Algo deu errado',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Erro ao carregar: $_error',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton.icon(
+                              onPressed: _fetchItem,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Tentar novamente'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.infoLight,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
                                 ),
-                                child: const Icon(
-                                  Icons.inventory_2_outlined,
-                                  color: Colors.white,
-                                  size: 40,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _item?['name']?.toString() ?? 'Sem nome',
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : _item == null
+                      ? Center(
+                          child: Container(
+                            margin: const EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withValues(alpha: 0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                  child: const Icon(
+                                    Icons.search_off,
+                                    color: Colors.orange,
+                                    size: 48,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Item não encontrado',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'O produto que você procura não existe ou foi removido.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      AppColors.infoLight.withValues(alpha: 0.8),
+                                      AppColors.infoLight,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.infoLight.withValues(alpha: 0.3),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 8),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _supplierName ??
-                                          _item?['supplierName']?.toString() ??
-                                          'Fornecedor não informado',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.9,
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.2),
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          child: const Icon(
+                                            Icons.inventory_2_outlined,
+                                            color: Colors.white,
+                                            size: 40,
+                                          ),
                                         ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                _item?['name']?.toString() ?? 'Sem nome',
+                                                style: const TextStyle(
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                _supplierName ??
+                                                    _item?['supplierName']?.toString() ??
+                                                    'Fornecedor não informado',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: Colors.white.withValues(
+                                                    alpha: 0.9,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 20),
+                                    // Status do estoque
+                                    Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: _stockStatusCard(
+                                              'Estoque Atual',
+                                              _item?['currentStock']?.toString() ?? '0',
+                                              Icons.inventory,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: _stockStatusCard(
+                                              'Unidade',
+                                              _item?['measure']?.toString() ?? '-',
+                                              Icons.straighten,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
+                              const SizedBox(height: 20),
+
+                              // Informações técnicas
+                              _sectionCard(
+                                title: 'Informações do Produto',
+                                icon: Icons.info_outline,
+                                children: [
+                                  _modernInfoRow(
+                                    'Código',
+                                    _item?['id']?.toString() ?? '-',
+                                    Icons.qr_code,
+                                  ),
+                                  _modernInfoRow(
+                                    'Validade',
+                                    _formatDate(_item?['expirationDate']?.toString()),
+                                    Icons.event,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Controle de estoque
+                              _sectionCard(
+                                title: 'Controle de Estoque',
+                                icon: Icons.inventory_2,
+                                children: [
+                                  _modernInfoRow(
+                                    'Fornecedor',
+                                    _supplierName ??
+                                        _item?['supplierName']?.toString() ??
+                                        'Não informado',
+                                    Icons.business,
+                                  ),
+                                  _modernInfoRow(
+                                    'Estoque Mínimo',
+                                    _item?['minimumStock']?.toString() ??
+                                        _item?['minStock']?.toString() ??
+                                        _item?['minimum_stock']?.toString() ??
+                                        'Não informado',
+                                    Icons.warning_amber,
+                                  ),
+                                  _modernInfoRow(
+                                    'Estoque Máximo',
+                                    _item?['maximumStock']?.toString() ??
+                                        _item?['maxStock']?.toString() ??
+                                        _item?['maximum_stock']?.toString() ??
+                                        'Não informado',
+                                    Icons.check_circle_outline,
+                                  ),
+                                  _modernInfoRow(
+                                    'Tipo do Item',
+                                    _itemTypeName ??
+                                        _item?['itemType']?.toString() ??
+                                        'Não informado',
+                                    Icons.label,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Descrição se houver
+                              if ((_item?['description']?.toString().isNotEmpty ?? false))
+                                _sectionCard(
+                                  title: 'Descrição',
+                                  icon: Icons.description,
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[50],
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.grey[200]!),
+                                      ),
+                                      child: Text(
+                                        _item?['description']?.toString() ?? '',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          height: 1.5,
+                                          color: Colors.grey[700],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              const SizedBox(height: 20),
+
+                              // Histórico de Perdas
+                              _sectionCard(
+                                title: 'Histórico de Perdas',
+                                icon: Icons.remove_circle_outline,
+                                children: _itemLosses.isEmpty
+                                    ? [
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[50],
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: Colors.grey[200]!),
+                                          ),
+                                          child: Text(
+                                            'Nenhuma perda registrada para este item.',
+                                            style: TextStyle(color: Colors.grey[700]),
+                                          ),
+                                        ),
+                                      ]
+                                    : _itemLosses.map((loss) {
+                                        final date = loss['createDate']?.toString() ?? loss['create_date']?.toString();
+                                        final qty = loss['lostQuantity']?.toString() ?? loss['lost_quantity']?.toString() ?? '-';
+                                        final reason = loss['reason']?.toString() ?? '-';
+                                        final recordedBy = loss['recordedByName']?.toString() ?? loss['recorded_by_name']?.toString() ?? '-';
+                                        
+                                        return Container(
+                                          margin: const EdgeInsets.only(bottom: 12),
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[50],
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: Colors.grey[200]!),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      reason,
+                                                      style: TextStyle(fontWeight: FontWeight.w600),
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      'Registrado por: $recordedBy',
+                                                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.end,
+                                                children: [
+                                                  Text(
+                                                    qty,
+                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Text(
+                                                    _formatDate(date),
+                                                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                              ),
+                              const SizedBox(height: 20),
+
+                              if (_userRole == 'ADMIN' || _userRole == 'MANAGER')
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 56,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () async {
+                                      final result = await Navigator.pushNamed(
+                                        context,
+                                        '/register_loss',
+                                        arguments: {
+                                          'itemId': _item!['id']?.toString() ??
+                                              _item!['itemId']?.toString(),
+                                          'itemName': _item!['name']?.toString() ??
+                                              'Item sem nome',
+                                        },
+                                      );
+
+                                      if (result == true || (result is Map && result.containsKey('createdLoss'))) {
+                                        setState(() {
+                                          _dataChanged = true;
+                                        });
+
+                                        if (result is Map && result['createdLoss'] != null) {
+                                          try {
+                                            final created = Map<String, dynamic>.from(result['createdLoss']);
+                                            _itemLosses.insert(0, created);
+                                            
+                                            if (_item != null && _item!.containsKey('lossHistory') && _item!['lossHistory'] is List) {
+                                              final list = _item!['lossHistory'] as List;
+                                              list.insert(0, created);
+                                              _item!['lossHistory'] = list;
+                                            }
+
+                                            final current = _item?['currentStock'];
+                                            if (current != null) {
+                                              try {
+                                                final intCur = int.tryParse(current.toString()) ?? current as int;
+                                                final lost = int.tryParse(created['lostQuantity']?.toString() ?? '') ?? (created['lost_quantity'] ?? 0) as int;
+                                                _item!['currentStock'] = (intCur - lost).toString();
+                                              } catch (_) {
+                                              }
+                                            }
+                                          } catch (e) {
+                                            print('Erro ao aplicar perda sintética localmente: $e');
+                                          }
+                                        }
+
+                                        try {
+                                          await _fetchItem();
+                                        } catch (e) {
+                                          print('Erro ao atualizar item apos perda: $e');
+                                        }
+                                        if (mounted) Navigator.of(context).pop(true);
+                                      }
+                                    },
+                                    icon: const Icon(Icons.warning_amber_rounded, size: 22),
+                                    label: const Text(
+                                      'Registrar Perda',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      foregroundColor: Colors.white,
+                                      elevation: 2,
+                                      shadowColor: Colors.red.withValues(alpha: 0.3),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                              if (_userRole == 'ADMIN' || _userRole == 'MANAGER')
+                                const SizedBox(height: 20),
+
+                              const SizedBox.shrink(),
                             ],
                           ),
-                          const SizedBox(height: 20),
-                          // Status do estoque
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: _stockStatusCard(
-                                    'Estoque Atual',
-                                    _item?['currentStock']?.toString() ?? '0',
-                                    Icons.inventory,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _stockStatusCard(
-                                    'Unidade',
-                                    _item?['measure']?.toString() ?? '-',
-                                    Icons.straighten,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Informações técnicas
-                    _sectionCard(
-                      title: 'Informações do Produto',
-                      icon: Icons.info_outline,
-                      children: [
-                        _modernInfoRow(
-                          'Código',
-                          _item?['id']?.toString() ?? '-',
-                          Icons.qr_code,
                         ),
-                        _modernInfoRow(
-                          'Validade',
-                          _formatDate(_item?['expirationDate']?.toString()),
-                          Icons.event,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Controle de estoque
-                    _sectionCard(
-                      title: 'Controle de Estoque',
-                      icon: Icons.inventory_2,
-                      children: [
-                        _modernInfoRow(
-                          'Fornecedor',
-                          _supplierName ??
-                              _item?['supplierName']?.toString() ??
-                              'Não informado',
-                          Icons.business,
-                        ),
-                        _modernInfoRow(
-                          'Estoque Mínimo',
-                          _item?['minimumStock']?.toString() ??
-                              _item?['minStock']?.toString() ??
-                              _item?['minimum_stock']?.toString() ??
-                              'Não informado',
-                          Icons.warning_amber,
-                        ),
-                        _modernInfoRow(
-                          'Estoque Máximo',
-                          _item?['maximumStock']?.toString() ??
-                              _item?['maxStock']?.toString() ??
-                              _item?['maximum_stock']?.toString() ??
-                              'Não informado',
-                          Icons.check_circle_outline,
-                        ),
-                        _modernInfoRow(
-                          'Tipo do Item',
-                          _itemTypeName ??
-                              _item?['itemType']?.toString() ??
-                              'Não informado',
-                          Icons.label,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Descrição se houver
-                    if ((_item?['description']?.toString().isNotEmpty ?? false))
-                      _sectionCard(
-                        title: 'Descrição',
-                        icon: Icons.description,
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey[200]!),
-                            ),
-                            child: Text(
-                              _item?['description']?.toString() ?? '',
-                              style: TextStyle(
-                                fontSize: 15,
-                                height: 1.5,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    const SizedBox(height: 20),
-
-                    // Botões de ação ocultados a pedido: Editar e Movimentar
-                    const SizedBox.shrink(),
-                  ],
-                ),
-              ),
+        ),
       ),
     );
   }
