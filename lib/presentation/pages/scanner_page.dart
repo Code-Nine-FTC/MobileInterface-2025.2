@@ -48,26 +48,38 @@ class _ScannerPageState extends State<ScannerPage> {
 
                     setState(() => _result = value);
 
-                    final uri = Uri.tryParse(value);
-                    if (uri == null || !uri.queryParameters.containsKey('code')) {
+                    final scanned = value.trim();
+                    // O backend fornece o campo qrCode já no formato de rota (ex: "/items?code=xxx").
+                    // Usamos exatamente o conteúdo lido para buscar o item.
+                    if (!scanned.contains('code=')) {
                       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('QR inválido')));
                       _isDetecting = false;
                       return;
                     }
 
-                    // Usa apenas path + query (ex: /items/qr?code=...)
-                    final path = uri.path.startsWith('/') ? uri.path : '/${uri.path}';
-                    final codeParam = uri.queryParameters['code'] ?? '';
-                    final uriString = '$path?code=${Uri.encodeComponent(codeParam)}';
+                    final uriString = scanned; // usar exatamente o valor do QR
 
                     setState(() => _isFetching = true);
                     try {
                       final api = ItemApiDataSource();
+                      print('[ScannerPage] Scanned QR -> $uriString');
                       final item = await api.getItemByQrCode(uriString);
                       if (!mounted) return;
                       await Navigator.of(context).push(MaterialPageRoute(builder: (_) => StockEditPage(item: item)));
                     } catch (e) {
-                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao buscar item: $e')));
+                      // Log detalhado para depuração
+                      print('[ScannerPage] Erro ao buscar item por QR ($uriString): $e');
+                      String userMsg = 'Erro ao recuperar item';
+                      try {
+                        final msg = e.toString();
+                        if (msg.contains('Item não encontrado')) {
+                          userMsg = 'Item não encontrado';
+                        } else if (msg.isNotEmpty) {
+                          // Mostra a mensagem sem o prefixo Exception: para o usuário
+                          userMsg = msg.replaceFirst('Exception: ', '');
+                        }
+                      } catch (_) {}
+                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$userMsg')));
                     } finally {
                       if (mounted) {
                         setState(() {

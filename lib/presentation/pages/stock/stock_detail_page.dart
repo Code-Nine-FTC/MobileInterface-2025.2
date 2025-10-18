@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart';
 import 'package:printing/printing.dart';
@@ -652,9 +653,8 @@ class _StockDetailPageState extends State<StockDetailPage> {
   }
 
   Future<void> _showQrDialog(BuildContext context) async {
-    final encryptedId = _item?['qrCode']?.toString() ?? '-';
-    // Construir a rota completa que o backend espera
-    final code = '/items/qr?code=$encryptedId';
+  // O backend já retorna o campo `qrCode` no formato esperado (ex: "/items?code=...").
+  final code = _item?['qrCode']?.toString() ?? '-';
     final name = _item?['name']?.toString() ?? 'Sem nome';
 
     await showDialog(
@@ -723,11 +723,37 @@ class _StockDetailPageState extends State<StockDetailPage> {
 
   Future<void> _shareQr(String code, String name) async {
     try {
-      await Share.share('Produto: $name');
+      // Gera o PDF na memória (mesma lógica de _printQrAsPdf, mas sem abrir diálogo de impressão)
+      final doc = pw.Document();
+
+      // Renderiza o QR em bytes
+      final qrPainter = QrPainter(data: code, version: QrVersions.auto, gapless: false);
+      final byteData = await qrPainter.toImageData(300);
+      final bytes = byteData!.buffer.asUint8List();
+      final image = pw.MemoryImage(bytes);
+
+      doc.addPage(pw.Page(build: (context) {
+        return pw.Column(children: [
+          pw.Text(name, style: pw.TextStyle(fontSize: 18)),
+          pw.SizedBox(height: 12),
+          pw.Image(image, width: 200, height: 200),
+        ]);
+      }));
+
+      final pdfBytes = await doc.save();
+
+      // Cria um XFile em memória e compartilha
+      final xfile = XFile.fromData(
+        pdfBytes,
+        name: '${name.replaceAll(' ', '_')}_qr.pdf',
+        mimeType: 'application/pdf',
+      );
+
+      await Share.shareXFiles([xfile], text: 'Produto: $name');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro ao compartilhar')),
+        SnackBar(content: Text('Erro ao compartilhar: $e')),
       );
     }
   }
