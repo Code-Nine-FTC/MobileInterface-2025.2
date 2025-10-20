@@ -163,7 +163,145 @@ class ItemApiDataSource {
       } else if (e.response?.statusCode == 403) {
         throw Exception('Acesso negado.');
       }
-      throw Exception('Falha ao buscar item: ${e.response?.data ?? e.message}');
+      String emsg = e.response?.data?.toString() ?? '';
+      if (emsg.isEmpty) emsg = e.message ?? 'Erro desconhecido';
+      throw Exception('Falha ao buscar item: $emsg');
+    }
+  }
+
+  Future<Map<String, dynamic>> registerLoss(
+    String itemId,
+    int lostQuantity,
+    String reason,
+    String recordedById,
+  ) async {
+    try {
+      print('[ItemApiDataSource] Registrando perda para item $itemId');
+      print('[ItemApiDataSource] Quantidade perdida: $lostQuantity');
+      print('[ItemApiDataSource] Motivo: $reason');
+      print('[ItemApiDataSource] Registrado por: $recordedById');
+
+      final data = {
+        'reason': reason,
+        'lostQuantity': lostQuantity,
+        'itemId': int.tryParse(itemId) ?? itemId,
+        'recordedById': int.tryParse(recordedById) ?? recordedById,
+      };
+
+      final response = await _apiService.post(
+        '/items/loss',
+        data: data,
+      );
+
+      print('[ItemApiDataSource] Status Code: ${response.statusCode}');
+      print('[ItemApiDataSource] Response Data: ${response.data}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data is Map<String, dynamic>) {
+          return Map<String, dynamic>.from(response.data);
+        }
+
+        final raw = response.data;
+        if (raw is String) {
+          try {
+            final parsed = jsonDecode(raw);
+            if (parsed is Map<String, dynamic>) return parsed;
+          } catch (_) {
+            return {
+              'success': true,
+              'message': raw,
+              'statusCode': response.statusCode,
+            };
+          }
+        }
+
+        return {
+          'success': true,
+          'message': 'Perda registrada com sucesso',
+          'statusCode': response.statusCode,
+        };
+      } else {
+        final err = response.data;
+        throw Exception('Falha ao registrar perda: $err');
+      }
+    } on DioException catch (e) {
+      print('[ItemApiDataSource] DioException: ${e.type}');
+      print('[ItemApiDataSource] DioException message: ${e.message}');
+      print('[ItemApiDataSource] DioException response: ${e.response?.data}');
+
+      if (e.response?.statusCode == 422) {
+        String errorMsg = 'Dados inválidos';
+        try {
+          if (e.response?.data is Map && e.response!.data.containsKey('message')) {
+            errorMsg = e.response!.data['message'];
+          } else if (e.response?.data is String) {
+            errorMsg = e.response!.data;
+          }
+        } catch (_) {}
+        throw Exception(errorMsg);
+      } else if (e.response?.statusCode == 404) {
+        throw Exception('Item não encontrado');
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('Token expirado ou inválido. Faça login novamente.');
+      } else if (e.response?.statusCode == 403) {
+        throw Exception('Acesso negado. Você não tem permissão para registrar perdas.');
+      }
+
+      final errorMsg = e.response?.data != null && e.response!.data.toString().isNotEmpty ? e.response!.data : (e.message ?? 'Erro desconhecido');
+      throw Exception('Falha ao registrar perda: $errorMsg');
+    } catch (e) {
+      print('[ItemApiDataSource] Erro geral: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getItemLosses({
+    String? itemId,
+    String? recordedById,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? itemLossId,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (itemId != null && itemId.isNotEmpty) queryParams['itemId'] = int.tryParse(itemId) ?? itemId;
+      if (recordedById != null && recordedById.isNotEmpty) queryParams['recordedById'] = int.tryParse(recordedById) ?? recordedById;
+      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String();
+      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String();
+      if (itemLossId != null && itemLossId.isNotEmpty) queryParams['itemLossId'] = int.tryParse(itemLossId) ?? itemLossId;
+
+      print('[ItemApiDataSource] getItemLosses query: $queryParams');
+
+      final response = await _apiService.get('/items/loss', queryParameters: queryParams);
+      print('[ItemApiDataSource] getItemLosses status: ${response.statusCode}');
+      print('[ItemApiDataSource] getItemLosses data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data.map((e) => e is Map ? Map<String, dynamic>.from(e) : {'value': e}));
+        } else if (data is Map && data.containsKey('content')) {
+          return List<Map<String, dynamic>>.from(data['content']);
+        } else if (data is Map) {
+          return [Map<String, dynamic>.from(data)];
+        }
+        throw Exception('Formato inesperado ao buscar perdas: $data');
+      } else {
+        throw Exception('Falha ao buscar perdas: ${response.data}');
+      }
+    } on DioException catch (e) {
+      print('[ItemApiDataSource] DioException getItemLosses: ${e.message}');
+      final status = e.response?.statusCode;
+      if (status != null && status >= 500 && status < 600) {
+        print('[ItemApiDataSource] Erro 5xx ao buscar perdas do item (status: $status). Retornando lista vazia para evitar crash.');
+        return <Map<String, dynamic>>[];
+      }
+      String msg = e.response?.data?.toString() ?? '';
+      if (msg.isEmpty) msg = e.message ?? 'Erro desconhecido';
+      throw Exception('Falha ao buscar perdas: $msg');
+    } catch (e) {
+      print('[ItemApiDataSource] Erro em getItemLosses: $e');
+      rethrow;
     }
   }
 
