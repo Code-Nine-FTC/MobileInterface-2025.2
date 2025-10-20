@@ -4,7 +4,6 @@ import '../../components/navBar.dart';
 import '../../components/standartScreen.dart';
 import '../../../data/api/item_api_data_source.dart';
 import 'stock_detail_page.dart';
-import '../../../data/api/supplier_api_data_source.dart';
 
 
 import '../../../core/utils/secure_storage_service.dart';
@@ -31,9 +30,11 @@ class _StockListPageState extends State<StockListPage> {
   bool _hasLoadedData = false;
   final int _itemsPerLoad = 20;
   String _searchQuery = '';
-  String? _selectedSupplier = 'Todos';
+  // Removido filtro por fornecedor
+  String? _selectedSupplier;
   String? _selectedSection = ''; 
   String? _userRole;
+  // Removido: lista de fornecedores
   List<String> _suppliers = []; 
   final List<Map<String, String>> _sections = [
     {'id': '', 'name': 'Todas'},
@@ -82,13 +83,12 @@ class _StockListPageState extends State<StockListPage> {
     
     _filteredItems = _allItems.where((item) {
     final itemName = item['name']?.toString().toLowerCase() ?? '';
-    final itemSupplier = item['supplierName']?.toString() ?? '';
+  // Removido: filtro por fornecedor
+  final itemSupplier = '';
     // Busca ignorando acentos
     final matchesSearch = _searchQuery.isEmpty ||
       removeDiacriticsCustom(itemName).contains(removeDiacriticsCustom(_searchQuery));
-    final matchesSupplier = _selectedSupplier == null ||
-      _selectedSupplier == 'Todos' ||
-      itemSupplier == _selectedSupplier;
+    final matchesSupplier = true;
     return matchesSearch && matchesSupplier;
     }).toList();
     
@@ -169,30 +169,11 @@ class _StockListPageState extends State<StockListPage> {
       _allItems = await api.getItems(sectionId: effectiveSectionId, userRole: _userRole);
       _hasLoadedData = true;
       
-      // Buscar nomes dos fornecedores para items que só têm supplierId
-      await _fetchSupplierNames();
+  // Removido: enriquecimento com nomes de fornecedores
       
       print('Carregados ${_allItems.length} itens do backend');
       
-      final supplierSet = <String>{'Todos'}; 
-      for (final item in _allItems) {
-        final supplier = item['supplierName']?.toString();
-        if (supplier != null && supplier.isNotEmpty && supplier != 'Todos') {
-          supplierSet.add(supplier);
-        }
-      }
-      _suppliers = supplierSet.toList()..sort();
-      
-      if (_suppliers.contains('Todos')) {
-        _suppliers.remove('Todos');
-        _suppliers.insert(0, 'Todos');
-      }
-      
-      if (_selectedSupplier == null || !_suppliers.contains(_selectedSupplier)) {
-        _selectedSupplier = 'Todos';
-      }
-      
-      print('Fornecedores encontrados: $_suppliers');
+      // Removido: construção de filtro de fornecedores
       
       _filteredItems = List.from(_allItems);
       _displayedItems.clear();
@@ -219,42 +200,7 @@ class _StockListPageState extends State<StockListPage> {
     }
   }
 
-  Future<void> _fetchSupplierNames() async {
-    final supplierApi = SupplierApiDataSource();
-    final Map<String, String> supplierCache = {};
-    
-    for (int i = 0; i < _allItems.length; i++) {
-      final item = _allItems[i];
-      
-      // Se já tem supplierName, pula
-      if (item['supplierName'] != null && item['supplierName'].toString().isNotEmpty) {
-        continue;
-      }
-      
-      // Se tem supplierId, busca o nome
-      final supplierId = item['supplierId'];
-      if (supplierId != null) {
-        final supplierIdStr = supplierId.toString();
-        
-        // Verifica se já foi buscado no cache
-        if (supplierCache.containsKey(supplierIdStr)) {
-          _allItems[i]['supplierName'] = supplierCache[supplierIdStr];
-        } else {
-          try {
-            final supplier = await supplierApi.getSupplierById(supplierIdStr);
-            final supplierName = supplier['name']?.toString() ?? 'Fornecedor não encontrado';
-            supplierCache[supplierIdStr] = supplierName;
-            _allItems[i]['supplierName'] = supplierName;
-          } catch (e) {
-            print('Erro ao buscar fornecedor $supplierIdStr: $e');
-            _allItems[i]['supplierName'] = 'Fornecedor não encontrado';
-          }
-        }
-      } else {
-        _allItems[i]['supplierName'] = 'Fornecedor não informado';
-      }
-    }
-  }
+  // Removido: rotina de busca de nomes de fornecedores
 
   void _loadMoreItems() {
     if (!_hasLoadedData || _displayedItems.length >= _filteredItems.length || _isLoading) {
@@ -437,62 +383,7 @@ class _StockListPageState extends State<StockListPage> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Dropdown Fornecedor (apenas para não-ADMIN)
-                      if (_suppliers.isNotEmpty && _userRole != 'ADMIN')
-                        Expanded(
-                          child: Container(
-                            height: 40,
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: _selectedSupplier != 'Todos' 
-                                    ? AppColors.infoLight.withValues(alpha: 0.3)
-                                    : Colors.grey[300]!,
-                                width: 1,
-                              ),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _getValidSupplierValue(),
-                                hint: Text(
-                                  'Fornecedor',
-                                  style: TextStyle(
-                                    color: Colors.grey[500],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                isExpanded: true,
-                                icon: Icon(
-                                  Icons.arrow_drop_down,
-                                  color: Colors.grey[400],
-                                  size: 20,
-                                ),
-                                style: TextStyle(
-                                  color: Colors.grey[700],
-                                  fontSize: 12,
-                                ),
-                                items: _suppliers.map((supplier) {
-                                  return DropdownMenuItem(
-                                    value: supplier,
-                                    child: Text(
-                                      supplier,
-                                      style: const TextStyle(fontSize: 12),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedSupplier = value;
-                                    _applyFilters();
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
+                      // Removido: filtro por fornecedor
                       // Dropdown Seção para ADMIN
                       if (_userRole == 'ADMIN') ...[
                         Expanded(
@@ -821,28 +712,7 @@ class _StockListPageState extends State<StockListPage> {
                                               ],
                                             ),
                                             const SizedBox(height: 8),
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.business,
-                                                  size: 16,
-                                                  color: Colors.grey[600],
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Expanded(
-                                                  child: Text(
-                                                    item['supplierName']?.toString() ?? 'Fornecedor não informado',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      color: Colors.grey[600],
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                            const SizedBox.shrink(),
                                           ],
                                         ),
                                       ),

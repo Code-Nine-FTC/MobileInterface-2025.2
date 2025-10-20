@@ -9,9 +9,10 @@ import 'package:printing/printing.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../components/standartScreen.dart';
 import '../../../data/api/item_api_data_source.dart';
-import '../../../data/api/supplier_api_data_source.dart';
 import '../../../core/utils/secure_storage_service.dart';
 import '../../../data/api/item_type_api_data_source.dart';
+import '../../../data/api/lot_api_data_source.dart';
+import '../../../domain/entities/lot.dart';
 import '../../components/navBar.dart';
 
 class StockDetailPage extends StatefulWidget {
@@ -28,9 +29,12 @@ class _StockDetailPageState extends State<StockDetailPage> {
   Map<String, dynamic>? _item;
   bool _loading = true;
   String? _error;
-  String? _supplierName;
   String? _itemTypeName;
   final SecureStorageService _storageService = SecureStorageService();
+  // Lots state
+  List<Lot> _lots = [];
+  bool _lotsLoading = false;
+  String? _lotsError;
 
   @override
   void initState() {
@@ -39,27 +43,32 @@ class _StockDetailPageState extends State<StockDetailPage> {
       _item = widget.itemData;
       _loading = false;
       _fetchAdditionalData();
+      _fetchLots();
     } else {
       _fetchItem();
     }
   }
 
+  Future<void> _quickAdjust(Lot lot, int delta) async {
+    try {
+      final api = LotApiDataSource();
+      await api.adjustLot(lotId: lot.id, delta: delta);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(delta > 0 ? 'Adicionado 1 ao lote' : 'Removido 1 do lote')),
+      );
+      await _fetchLots();
+      await _fetchItem();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao ajustar lote: $e')),
+      );
+    }
+  }
+
   Future<void> _fetchAdditionalData() async {
     if (_item == null) return;
-
-    String? supplierName;
-    if (_item!['supplierId'] != null) {
-      try {
-        final supplierApi = SupplierApiDataSource();
-        final supplier = await supplierApi.getSupplierById(
-          _item!['supplierId'].toString(),
-        );
-        supplierName = supplier['name'];
-      } catch (e) {
-        print('Erro ao buscar fornecedor: $e');
-        supplierName = 'Fornecedor não encontrado';
-      }
-    }
 
     String? itemTypeName;
     if (_item!['itemTypeId'] != null) {
@@ -76,7 +85,6 @@ class _StockDetailPageState extends State<StockDetailPage> {
     }
 
     setState(() {
-      _supplierName = supplierName;
       _itemTypeName = itemTypeName;
     });
   }
@@ -98,21 +106,6 @@ class _StockDetailPageState extends State<StockDetailPage> {
       final api = ItemApiDataSource();
       final data = await api.getItemById(widget.itemId!);
 
-      // Buscar nome do fornecedor se houver supplierId
-      String? supplierName;
-      if (data['supplierId'] != null) {
-        try {
-          final supplierApi = SupplierApiDataSource();
-          final supplier = await supplierApi.getSupplierById(
-            data['supplierId'].toString(),
-          );
-          supplierName = supplier['name'];
-        } catch (e) {
-          print('Erro ao buscar fornecedor: $e');
-          supplierName = 'Fornecedor não encontrado';
-        }
-      }
-
       // Buscar nome do tipo de item se houver itemTypeId
       String? itemTypeName;
       if (data['itemTypeId'] != null) {
@@ -130,16 +123,175 @@ class _StockDetailPageState extends State<StockDetailPage> {
 
       setState(() {
         _item = data;
-        _supplierName = supplierName;
         _itemTypeName = itemTypeName;
         _loading = false;
       });
+      await _fetchLots();
     } catch (e) {
       setState(() {
         _error = e.toString();
         _loading = false;
       });
     }
+  }
+
+  int? _currentItemId() {
+    final dynamic id1 = _item?['id'];
+    final dynamic id2 = _item?['itemId'];
+    final dynamic id3 = _item?['item_id'];
+    final String? id4 = widget.itemId;
+    int? parse(dynamic v) => v is int ? v : int.tryParse(v?.toString() ?? '');
+    return parse(id1) ?? parse(id2) ?? parse(id3) ?? parse(id4);
+  }
+
+  Future<void> _fetchLots() async {
+    final itemId = _currentItemId();
+    if (itemId == null) return;
+    setState(() {
+      _lotsLoading = true;
+      _lotsError = null;
+    });
+    try {
+      final api = LotApiDataSource();
+      final lots = await api.listLots(itemId: itemId);
+      setState(() {
+        _lots = lots;
+        _lotsLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _lotsLoading = false;
+        _lotsError = e.toString();
+      });
+    }
+  }
+
+  Future<void> _openCreateLotDialog() async {
+    final itemId = _currentItemId();
+    if (itemId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Não foi possível identificar o ID numérico do item para criar lote.'),
+      ));
+      return;
+    }
+    final codeController = TextEditingController();
+    final expireController = TextEditingController();
+    final qtyController = TextEditingController(text: '0');
+    final formKey = GlobalKey<FormState>();
+    bool saving = false;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDlg) {
+            return AlertDialog(
+              title: const Text('Novo Lote'),
+              content: Form(
+                key: formKey,
+                child: SizedBox(
+                  width: 360,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: codeController,
+                        decoration: const InputDecoration(labelText: 'Código (obrigatório)'),
+                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o código' : null,
+                      ),
+                      TextFormField(
+                        controller: expireController,
+                        decoration: const InputDecoration(labelText: 'Validade (yyyy-MM-dd, opcional)'),
+                      ),
+                      TextFormField(
+                        controller: qtyController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Quantidade (>= 0)'),
+                        validator: (v) {
+                          final n = int.tryParse(v ?? '');
+                          if (n == null || n < 0) return 'Quantidade inválida';
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: saving ? null : () => Navigator.pop(context), child: const Text('Cancelar')),
+                ElevatedButton(
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+                          setDlg(() => saving = true);
+                          try {
+                            final lotsApi = LotApiDataSource();
+                            await lotsApi.createLot(
+                              itemId: itemId,
+                              code: codeController.text.trim(),
+                              expireDate: expireController.text.trim().isEmpty ? null : expireController.text.trim(),
+                              quantity: int.parse(qtyController.text.trim()),
+                            );
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lote criado com sucesso')));
+                            await _fetchLots();
+                            await _fetchItem();
+                          } catch (e) {
+                            setDlg(() => saving = false);
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao criar lote: $e')));
+                          }
+                        },
+                  child: saving ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Salvar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _openAdjustLotDialog(Lot lot) async {
+    final deltaController = TextEditingController(text: '0');
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Ajustar Lote ${lot.code}'),
+        content: SizedBox(
+          width: 320,
+          child: TextField(
+            controller: deltaController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Delta (+ entrada, - baixa)'),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () async {
+              final delta = int.tryParse(deltaController.text.trim()) ?? 0;
+              try {
+                final api = LotApiDataSource();
+                await api.adjustLot(lotId: lot.id, delta: delta);
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lote ajustado')));
+                await _fetchLots();
+                await _fetchItem();
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao ajustar lote: $e')));
+              }
+            },
+            child: const Text('Aplicar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -342,17 +494,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Text(
-                                      _supplierName ??
-                                          _item?['supplierName']?.toString() ??
-                                          'Fornecedor não informado',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.9,
-                                        ),
-                                      ),
-                                    ),
+                                    const SizedBox.shrink(),
                                   ],
                                 ),
                               ),
@@ -419,13 +561,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
                       title: 'Controle de Estoque',
                       icon: Icons.inventory_2,
                       children: [
-                        _modernInfoRow(
-                          'Fornecedor',
-                          _supplierName ??
-                              _item?['supplierName']?.toString() ??
-                              'Não informado',
-                          Icons.business,
-                        ),
+                        // Fornecedor removido do domínio
                         _modernInfoRow(
                           'Estoque Mínimo',
                           _item?['minimumStock']?.toString() ??
@@ -482,6 +618,136 @@ class _StockDetailPageState extends State<StockDetailPage> {
 
                     // Botões de ação ocultados a pedido: Editar e Movimentar
                     const SizedBox.shrink(),
+                    const SizedBox(height: 16),
+
+                    // Seção de Lotes
+                    _sectionCard(
+                      title: 'Lotes',
+                      icon: Icons.qr_code_2,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _currentItemId() == null
+                                    ? 'ID do item não disponível nesta tela. Abra o item via lista de estoque para gerenciar lotes.'
+                                    : 'Gerencie os lotes deste item',
+                                style: TextStyle(color: Colors.grey[700]),
+                              ),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: _openCreateLotDialog,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Novo Lote'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.infoLight,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (_currentItemId() != null) ...[
+                          if (_lotsLoading)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(12.0),
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          else if (_lotsError != null)
+                            Text('Erro ao carregar lotes: $_lotsError', style: const TextStyle(color: Colors.red))
+                          else if (_lots.isEmpty)
+                            Text('Nenhum lote cadastrado para este item.', style: TextStyle(color: Colors.grey[600]))
+                          else
+                            Column(
+                              children: _lots.map((lot) {
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey[200]!),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Esquerda: código e validade
+                                      Expanded(
+                                        flex: 3,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Código: ${lot.code}',
+                                              style: const TextStyle(fontWeight: FontWeight.w600),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text('Validade: ${lot.expireDate == null || lot.expireDate!.isEmpty ? '—' : lot.expireDate!}'),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      // Direita: quantidade e ações compactas
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(maxWidth: 140),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  'Qtd: ${lot.quantityOnHand}',
+                                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Wrap(
+                                              alignment: WrapAlignment.end,
+                                              spacing: 4,
+                                              runSpacing: 4,
+                                              children: [
+                                                IconButton(
+                                                  tooltip: 'Baixar 1',
+                                                  onPressed: () => _quickAdjust(lot, -1),
+                                                  icon: const Icon(Icons.remove_circle, color: Colors.red, size: 20),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                                                  visualDensity: VisualDensity.compact,
+                                                ),
+                                                IconButton(
+                                                  tooltip: 'Adicionar 1',
+                                                  onPressed: () => _quickAdjust(lot, 1),
+                                                  icon: const Icon(Icons.add_circle, color: Colors.green, size: 20),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                                                  visualDensity: VisualDensity.compact,
+                                                ),
+                                                IconButton(
+                                                  tooltip: 'Ajustar...',
+                                                  onPressed: () => _openAdjustLotDialog(lot),
+                                                  icon: const Icon(Icons.tune, color: Colors.blueGrey, size: 20),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                                                  visualDensity: VisualDensity.compact,
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                        ]
+                      ],
+                    ),
                   ],
                 ),
               ),

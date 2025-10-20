@@ -10,7 +10,6 @@ class Order {
   final int? createdById;
   final int? lastUserId;
   final List<int> itemIds;
-  final List<int> supplierIds;
   final DateTime? completionDate;
 
   Order({
@@ -23,7 +22,6 @@ class Order {
     this.createdById,
     this.lastUserId,
     required this.itemIds,
-    required this.supplierIds,
     this.completionDate,
   });
 
@@ -56,12 +54,6 @@ class Order {
         if (id is int) return id;
         return int.tryParse(id.toString()) ?? 0;
       }).toList(),
-      supplierIds: ensureList(json['suppliers']).map<int>((e) {
-        final id = e['id'];
-        if (id == null) return 0;
-        if (id is int) return id;
-        return int.tryParse(id.toString()) ?? 0;
-      }).toList(),
       completionDate: json['completionDate'] != null ? DateTime.tryParse(json['completionDate'].toString()) : null,
     );
   }
@@ -76,7 +68,6 @@ class Order {
         'createdById': createdById,
         'lastUserId': lastUserId,
         'itemIds': itemIds,
-        'supplierIds': supplierIds,
         'completionDate': completionDate?.toIso8601String(),
       };
 }
