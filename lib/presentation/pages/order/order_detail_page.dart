@@ -517,7 +517,11 @@ import '../../components/navBar.dart';
       },
     ),
     body: StandardScreen(
-      title: _order != null ? 'Pedido #${_order!.id}' : 'Detalhes do Pedido',
+    title: _order != null
+      ? (_order!.orderNumber != null && _order!.orderNumber!.isNotEmpty
+        ? 'Pedido ${_order!.orderNumber}'
+        : 'Pedido #${_order!.id}')
+      : 'Detalhes do Pedido',
       child: _isLoading
           ? const Center(
               child: Column(

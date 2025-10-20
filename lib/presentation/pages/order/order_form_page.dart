@@ -15,6 +15,7 @@ class OrderFormPage extends StatefulWidget {
 }
 
 class _OrderFormPageState extends State<OrderFormPage> {
+  final TextEditingController _orderNumberController = TextEditingController();
   void _onSavePressed() {
     _saveOrder();
   }
@@ -52,6 +53,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
 
   @override
   void dispose() {
+  _orderNumberController.dispose();
   // _statusController.dispose();
     super.dispose();
   }
@@ -296,6 +298,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
       if (widget.order == null) {
         await api.createOrder(
           itemQuantities: itemQuantities,
+          orderNumber: _orderNumberController.text.trim(),
         );
       } else {
         await api.updateOrderItems(
@@ -344,6 +347,56 @@ class _OrderFormPageState extends State<OrderFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Número manual do pedido (opcional)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 4)),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.infoLight.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(Icons.tag, color: AppColors.infoLight, size: 18),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('Número do Pedido', style: TextStyle(fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _orderNumberController,
+                            decoration: const InputDecoration(
+                              hintText: 'Ex.: 2025-000123',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                              isDense: true,
+                              prefixIcon: Icon(Icons.confirmation_number_outlined),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Informe o número do pedido';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 6),
+                          Text('Campo obrigatório', style: TextStyle(fontSize: 12, color: Colors.red[700])),
+                        ],
+                      ),
+                    ),
                     // ... Removido card de status e data de retirada ...
 
                     // Card Itens

@@ -69,21 +69,34 @@ class OrderApiDataSource extends BaseApiService {
     required Map<String, int> itemQuantities,
     int? sectionId,
     DateTime? withdrawDay,
+    required String orderNumber, // obrigatório: número manual do pedido
   }) async {
     // Fluxo sem fornecedor: envia apenas itemQuantities e opcionais sectionId/withdrawDay
     final payload = {
       'itemQuantities': itemQuantities,
       if (sectionId != null) 'sectionId': sectionId,
       if (withdrawDay != null) 'withdrawDay': _yyyyMmDd(withdrawDay),
+      'orderNumber': orderNumber.trim(),
     };
     print('[OrderApiDataSource] POST /orders payload: $payload');
-    final response = await post('/orders', data: payload);
-    print('[OrderApiDataSource] createOrder status=${response.statusCode} data=${response.data}');
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      // Backend retorna { id: <novoId> } — não precisamos parsear Order completo
-      return null;
+    try {
+      final response = await post('/orders', data: payload);
+      print('[OrderApiDataSource] createOrder status=${response.statusCode} data=${response.data}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Backend retorna { id: <novoId> } — não precisamos parsear Order completo
+        return null;
+      }
+      throw Exception('Erro ao criar pedido: ${response.data}');
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      final data = e.response?.data;
+      final msg = data?.toString() ?? e.message ?? 'Erro desconhecido ao criar pedido';
+      if (code == 409) {
+        throw Exception('Número do pedido já existente. Escolha outro.');
+      }
+      // Não tentamos criar sem orderNumber porque ele é obrigatório no app.
+      throw Exception('Erro ao criar pedido: $msg');
     }
-    throw Exception('Erro ao criar pedido: ${response.data}');
   }
 
   Future<Order?> updateOrderStatus({
