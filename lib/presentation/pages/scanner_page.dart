@@ -116,12 +116,6 @@ class _ScannerPageState extends State<ScannerPage> {
             ),
           ),
 
-          if (_result != null)
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Text('Resultado: $_result'),
-            ),
-
           // controls
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
