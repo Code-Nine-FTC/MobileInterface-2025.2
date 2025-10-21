@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'presentation/pages/loginPage.dart';
 import 'core/theme/app_theme.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'presentation/pages/menu.dart';
 import 'presentation/pages/products/registrationPage.dart';
 import 'presentation/pages/user/user_management_page.dart';
@@ -39,6 +40,16 @@ class MyApp extends StatelessWidget {
         darkTheme: AppTheme.dark,
         debugShowCheckedModeBanner: false,
         themeMode: mode,
+        localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: [
+        const Locale('pt', 'BR'),
+        const Locale('en', 'US'),
+        const Locale('zh', 'CN')
+      ],
         initialRoute: '/login',
         onGenerateRoute: (settings) {
           WidgetBuilder builder;

@@ -147,50 +147,141 @@ class _StockDetailPageState extends State<StockDetailPage> {
     final codeCtrl = TextEditingController();
     final qtyCtrl = TextEditingController(text: '0');
     final dateCtrl = TextEditingController();
+    final formKey =  GlobalKey<FormState>();
+    DateTime? pickedDate;
 
     await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Novo Lote'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Código')),
-            TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Quantidade'), keyboardType: TextInputType.number),
-            TextField(controller: dateCtrl, decoration: const InputDecoration(labelText: 'Validade (yyyy-MM-dd)')),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Novo Lote'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: codeCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Código',
+                      prefixIcon: Icon(Icons.barcode_reader),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'O número do lote é obrigatório';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: qtyCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Quantidade',
+                      prefixIcon: Icon(Icons.numbers),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'A quantidade é obrigatória';
+                      }
+                      if (int.tryParse(value) == null || int.parse(value) < 0) {
+                        return 'Informe um valor válido';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: pickedDate ?? DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                        locale: const Locale('pt', 'BR'),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          pickedDate = picked;
+                          dateCtrl.text = "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+                        });
+                      }
+                    },
+                    child: AbsorbPointer(
+                      child: TextFormField(
+                        controller: dateCtrl,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: 'Validade',
+                          prefixIcon: Icon(Icons.event),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        validator: (_) {
+                          if (pickedDate == null) {
+                            return 'A data de validade é obrigatória';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                final isValid = formKey.currentState?.validate() ?? false;
+                if (!isValid) return;
+                final code = codeCtrl.text.trim();
+                final qty = int.tryParse(qtyCtrl.text.trim()) ?? 0;
+                // Envia para o backend no formato yyyy-MM-dd
+                final expire = "${pickedDate!.year}-${pickedDate!.month.toString().padLeft(2, '0')}-${pickedDate!.day.toString().padLeft(2, '0')}";
+                try {
+                  final lot = await _lotApi.createLot(
+                    itemId: int.parse(id),
+                    code: code,
+                    expireDate: expire,
+                    quantity: qty,
+                  );
+                  if (!mounted) return;
+                  setState(() {
+                    _lots.insert(0, lot);
+                    _dataChanged = true;
+                  });
+                  Navigator.pop(ctx);
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erro ao criar lote: $e')),
+                  );
+                }
+              },
+              child: const Text('Criar'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () async {
-              final code = codeCtrl.text.trim();
-              final qty = int.tryParse(qtyCtrl.text.trim()) ?? 0;
-              final expire = dateCtrl.text.trim().isEmpty ? null : dateCtrl.text.trim();
-              try {
-                final lot = await _lotApi.createLot(
-                  itemId: int.parse(id),
-                  code: code,
-                  expireDate: expire,
-                  quantity: qty,
-                );
-                if (!mounted) return;
-                setState(() {
-                  _lots.insert(0, lot);
-                  _dataChanged = true;
-                });
-                Navigator.pop(ctx);
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Erro ao criar lote: $e')),
-                );
-              }
-            },
-            child: const Text('Criar'),
-          ),
-        ],
-      ),
+      )
     );
   }
 
@@ -524,7 +615,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
             // Lotes
             _sectionCard(
               title: 'Lotes',
-              icon: Icons.qr_code_2,
+              icon: Icons.barcode_reader,
               children: [
                 Row(
                   children: [
@@ -576,7 +667,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
                                   children: [
                                     Text('Código: ${lot.code}', style: const TextStyle(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
                                     const SizedBox(height: 4),
-                                    Text('Validade: ${lot.expireDate == null || lot.expireDate!.isEmpty ? '—' : lot.expireDate!}')
+                                    Text('Validade: ${_formatDate(lot.expireDate)}')
                                   ],
                                 ),
                               ),
