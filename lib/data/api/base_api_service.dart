@@ -13,6 +13,10 @@ class BaseApiService {
 
   BaseApiService() {
     final baseUrl = _resolveBaseUrl();
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('[BaseApiService] baseUrl resolvida: ' + baseUrl);
+    }
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -92,7 +96,7 @@ class BaseApiService {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         // AVD usa 10.0.2.2; Genymotion pode usar 10.0.3.2 (poderemos tornar configurável depois)
-        return 'http://127.0.0.1:$port';
+        return 'http://10.0.2.2:$port';
       case TargetPlatform.iOS:
       case TargetPlatform.macOS:
       case TargetPlatform.windows:

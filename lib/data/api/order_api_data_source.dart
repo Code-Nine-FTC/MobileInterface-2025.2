@@ -13,7 +13,7 @@ class OrderApiDataSource extends BaseApiService {
     return '${d.year}-$m-$day';
   }
   /// Atualiza os itens de um pedido existente
-  Future<bool> updateOrderItems(int orderId, Map<int, int> itemQuantities, DateTime withdrawDay) async {
+  Future<bool> updateOrderItems(int orderId, Map<int, int> itemQuantities, DateTime withdrawDay, {int? consumerSectionId}) async {
   print('[DEBUG] IDs enviados para updateOrderItems: ${itemQuantities.keys.toList()}');
     // Converte o mapa para Map<String, int> para o backend, se necessário
     final Map<String, int> itemQuantitiesStr = itemQuantities.map((k, v) => MapEntry(k.toString(), v));
@@ -21,6 +21,7 @@ class OrderApiDataSource extends BaseApiService {
       // Backend pode esperar apenas a data (yyyy-MM-dd)
       'withdrawDay': _yyyyMmDd(withdrawDay),
       'itemQuantities': itemQuantitiesStr,
+      if (consumerSectionId != null) 'consumerSectionId': consumerSectionId,
     };
     print('[OrderApiDataSource] Enviando updateOrderItems: $body');
     final response = await put(
@@ -67,14 +68,14 @@ class OrderApiDataSource extends BaseApiService {
   }
   Future<Order?> createOrder({
     required Map<String, int> itemQuantities,
-    int? sectionId,
+    required int consumerSectionId,
     DateTime? withdrawDay,
     required String orderNumber, // obrigatório: número manual do pedido
   }) async {
     // Fluxo sem fornecedor: envia apenas itemQuantities e opcionais sectionId/withdrawDay
     final payload = {
       'itemQuantities': itemQuantities,
-      if (sectionId != null) 'sectionId': sectionId,
+      'consumerSectionId': consumerSectionId,
       if (withdrawDay != null) 'withdrawDay': _yyyyMmDd(withdrawDay),
       'orderNumber': orderNumber.trim(),
     };
@@ -93,6 +94,14 @@ class OrderApiDataSource extends BaseApiService {
       final msg = data?.toString() ?? e.message ?? 'Erro desconhecido ao criar pedido';
       if (code == 409) {
         throw Exception('Número do pedido já existente. Escolha outro.');
+      }
+      if (code == 400) {
+        if (msg.toLowerCase().contains('consumersectionid')) {
+          throw Exception('consumerSectionId é obrigatório ou inválido.');
+        }
+        if (msg.toLowerCase().contains('consumer')) {
+          throw Exception('A seção informada não é do tipo CONSUMER.');
+        }
       }
       // Não tentamos criar sem orderNumber porque ele é obrigatório no app.
       throw Exception('Erro ao criar pedido: $msg');
@@ -119,11 +128,12 @@ class OrderApiDataSource extends BaseApiService {
     int? userId,
     int? sectionId,
   }) async {
-    // Não enviar nenhum filtro para buscar todos os pedidos
-    final response = await get(
-      '/orders',
-      queryParameters: null,
-    );
+    final Map<String, dynamic> qp = {};
+    if (sectionId != null) qp['sectionId'] = sectionId;
+    if (orderId != null) qp['orderId'] = orderId;
+    if (status != null) qp['status'] = status;
+    if (userId != null) qp['userId'] = userId;
+    final response = await get('/orders', queryParameters: qp.isEmpty ? null : qp);
     if (response.statusCode == 200) {
       final data = response.data;
       print('Resposta bruta da API /orders:');

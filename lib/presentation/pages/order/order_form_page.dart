@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../domain/entities/order.dart';
 import '../../../data/api/order_api_data_source.dart';
+import '../../../data/api/section_api_data_source.dart';
 import '../../../data/api/item_api_data_source.dart';
 import '../../components/standartScreen.dart';
 import '../../../core/theme/app_colors.dart';
@@ -34,6 +35,8 @@ class _OrderFormPageState extends State<OrderFormPage> {
   final _formKey = GlobalKey<FormState>();
   final SecureStorageService _storageService = SecureStorageService();
   List<Map<String, dynamic>> _availableItems = [];
+  List<Map<String, dynamic>> _consumerSections = [];
+  int? _selectedConsumerSectionId;
   // Removido: fornecedores
   Map<int, int> _selectedItemQuantities = {}; // itemId -> quantidade
   // Removido: seleção de fornecedores
@@ -66,6 +69,7 @@ class _OrderFormPageState extends State<OrderFormPage> {
       final sectionId = user?.sessionId;
       
       final itemApi = ItemApiDataSource();
+      final sectionApi = SectionApiDataSource();
       
       // Carregar itens baseado no role do usuário
       String? effectiveSectionId;
@@ -76,16 +80,58 @@ class _OrderFormPageState extends State<OrderFormPage> {
       }
       
       final items = await itemApi.getItems(sectionId: effectiveSectionId, userRole: _userRole);
+      final sections = await sectionApi.getConsumerSections();
       setState(() {
         _availableItems = items;
+        _consumerSections = sections;
+        // Se não conseguimos listar seções, usar seção do usuário como default (se existir)
+        if (_consumerSections.isEmpty && sectionId != null) {
+          _selectedConsumerSectionId = int.tryParse(sectionId);
+        }
         _loadingData = false;
       });
     } catch (e) {
       setState(() => _loadingData = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao carregar dados: $e')),
-        );
+        final msg = e.toString().contains('403')
+            ? 'Sem permissão para listar seções (403). Usando sua seção padrão se disponível.'
+            : 'Erro ao carregar dados: $e';
+        // Tentar usar seção do usuário como fallback
+        final user = await _storageService.getUser();
+        final sectionId = user?.sessionId;
+        if (_selectedConsumerSectionId == null && sectionId != null) {
+          setState(() {
+            _selectedConsumerSectionId = int.tryParse(sectionId);
+          });
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      }
+    }
+  }
+
+  Future<void> _reloadSections() async {
+    try {
+      final sectionApi = SectionApiDataSource();
+      final sections = await sectionApi.getConsumerSections();
+      setState(() {
+        _consumerSections = sections;
+      });
+    } catch (e) {
+      if (mounted) {
+        final msg = e.toString().contains('403')
+            ? 'Sem permissão para listar seções (403).'
+            : 'Erro ao carregar seções: $e';
+        // fallback: manter valor atual se houver
+        if (_selectedConsumerSectionId == null) {
+          final user = await _storageService.getUser();
+          final sectionId = user?.sessionId;
+          if (sectionId != null) {
+            setState(() {
+              _selectedConsumerSectionId = int.tryParse(sectionId);
+            });
+          }
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       }
     }
   }
@@ -288,6 +334,13 @@ class _OrderFormPageState extends State<OrderFormPage> {
       );
       return;
     }
+    // consumerSectionId obrigatório na criação
+    if (widget.order == null && _selectedConsumerSectionId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecione a Seção Consumidora')),
+      );
+      return;
+    }
     setState(() => _loading = true);
     final api = OrderApiDataSource();
     try {
@@ -299,12 +352,14 @@ class _OrderFormPageState extends State<OrderFormPage> {
         await api.createOrder(
           itemQuantities: itemQuantities,
           orderNumber: _orderNumberController.text.trim(),
+          consumerSectionId: _selectedConsumerSectionId!,
         );
       } else {
         await api.updateOrderItems(
           widget.order!.id,
           _selectedItemQuantities,
           widget.order!.withdrawDay,
+          consumerSectionId: _selectedConsumerSectionId,
         );
       }
       if (mounted) {
@@ -394,6 +449,99 @@ class _OrderFormPageState extends State<OrderFormPage> {
                           ),
                           const SizedBox(height: 6),
                           Text('Campo obrigatório', style: TextStyle(fontSize: 12, color: Colors.red[700])),
+                        ],
+                      ),
+                    ),
+                    // Seção Consumidora (obrigatória na criação)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 4)),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.infoLight.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(Icons.apartment, color: AppColors.infoLight, size: 18),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('Seção Consumidora', style: TextStyle(fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          if (_consumerSections.isNotEmpty)
+                            DropdownButtonFormField<int>(
+                              value: _selectedConsumerSectionId,
+                              items: _consumerSections
+                                  .map((s) => DropdownMenuItem<int>(
+                                        value: s['id'] as int?,
+                                        child: Text(s['title']?.toString() ?? 'Seção'),
+                                      ))
+                                  .toList(),
+                              onChanged: (v) => setState(() => _selectedConsumerSectionId = v),
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                                isDense: true,
+                                prefixIcon: Icon(Icons.store_mall_directory_outlined),
+                              ),
+                              validator: (v) {
+                                if (widget.order == null && (v == null)) {
+                                  return 'Selecione a Seção Consumidora';
+                                }
+                                return null;
+                              },
+                            )
+                          else if (_selectedConsumerSectionId != null) ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.grey[300]!),
+                              ),
+                              child: Text(
+                                'Seção selecionada: ID ${_selectedConsumerSectionId} (padrão) — não foi possível listar seções.',
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                          if (_consumerSections.isEmpty) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.info_outline, size: 16, color: Colors.orange),
+                                const SizedBox(width: 6),
+                                const Expanded(
+                                  child: Text(
+                                    'Nenhuma seção consumidora encontrada. Verifique sua conexão/servidor e tente recarregar.',
+                                    style: TextStyle(fontSize: 12, color: Colors.orange),
+                                  ),
+                                ),
+                                TextButton.icon(
+                                  onPressed: _reloadSections,
+                                  icon: const Icon(Icons.refresh, size: 16),
+                                  label: const Text('Recarregar'),
+                                ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 6),
+                          if (widget.order == null)
+                            Text('Campo obrigatório', style: TextStyle(fontSize: 12, color: Colors.red[700])),
                         ],
                       ),
                     ),

@@ -871,6 +871,28 @@ import '../../components/navBar.dart';
               ],
             ),
             const SizedBox(height: 20),
+            // Seção consumidora
+            Row(
+              children: [
+                const Icon(Icons.apartment, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    order.consumerSectionTitle != null && order.consumerSectionTitle!.isNotEmpty
+                        ? 'Seção: ${order.consumerSectionTitle}'
+                        : (order.consumerSectionId != null
+                            ? 'Seção: #${order.consumerSectionId}'
+                            : 'Seção: não informada'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white.withOpacity(0.95),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [

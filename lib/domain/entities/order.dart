@@ -3,6 +3,8 @@ import 'package:meta/meta.dart';
 class Order {
   final int id;
   final String? orderNumber;
+  final int? consumerSectionId;
+  final String? consumerSectionTitle;
   final DateTime withdrawDay;
   final String status;
   final DateTime createdAt;
@@ -16,6 +18,8 @@ class Order {
   Order({
     required this.id,
     this.orderNumber,
+    this.consumerSectionId,
+    this.consumerSectionTitle,
     required this.withdrawDay,
     required this.status,
     required this.createdAt,
@@ -44,6 +48,17 @@ class Order {
     return Order(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '') ?? 0,
       orderNumber: json['orderNumber']?.toString() ?? json['numeroPedido']?.toString(),
+      consumerSectionId: parseId(json['consumerSectionId'] ?? json['sectionId'] ?? json['consumerSection']?['id'] ?? json['section']?['id']),
+      consumerSectionTitle: (
+        json['consumerSectionTitle'] ??
+        json['sectionTitle'] ??
+        json['consumerSection']?['title'] ??
+        json['section']?['title'] ??
+        json['consumerSectionName'] ??
+        json['sectionName'] ??
+        json['consumerSection']?['name'] ??
+        json['section']?['name']
+      )?.toString(),
       withdrawDay: json['withdrawDay'] != null ? DateTime.tryParse(json['withdrawDay'].toString()) ?? DateTime(2000) : DateTime(2000),
       status: json['status']?.toString() ?? '',
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime(2000) : DateTime(2000),
@@ -64,6 +79,8 @@ class Order {
   Map<String, dynamic> toJson() => {
         'id': id,
     'orderNumber': orderNumber,
+    'consumerSectionId': consumerSectionId,
+    'consumerSectionTitle': consumerSectionTitle,
         'withdrawDay': withdrawDay.toIso8601String(),
         'status': status,
         'createdAt': createdAt.toIso8601String(),
