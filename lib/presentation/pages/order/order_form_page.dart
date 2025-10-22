@@ -51,6 +51,13 @@ class _OrderFormPageState extends State<OrderFormPage> {
   @override
   void initState() {
     super.initState();
+    // Prefill ao editar
+    if (widget.order?.orderNumber != null && widget.order!.orderNumber!.isNotEmpty) {
+      _orderNumberController.text = widget.order!.orderNumber!;
+    }
+    if (widget.order?.consumerSectionId != null) {
+      _selectedConsumerSectionId = widget.order!.consumerSectionId;
+    }
     _initSelectedItemsAndLoadData();
   }
 
