@@ -304,4 +304,84 @@ class ItemApiDataSource {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> getItemByQrCode(String uri) async {
+    try {
+      // Normaliza URLs absolutas (ex.: http://127.0.0.1:8080/items?code=...) para rota relativa
+      // Assim usamos sempre o baseUrl correto (10.0.2.2 no Android, localhost no desktop/web)
+      final raw = uri.trim();
+      String pathToGet;
+      if (raw.startsWith('http://') || raw.startsWith('https://')) {
+        final u = Uri.parse(raw);
+        pathToGet = u.path + (u.hasQuery ? '?${u.query}' : '');
+      } else {
+        pathToGet = raw.startsWith('/') ? raw : '/$raw';
+      }
+
+      final response = await _apiService.get(pathToGet);
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) return data;
+        throw Exception('Formato de resposta inesperado ao obter item por QR: ${response.data}');
+      } else if (response.statusCode == 404) {
+        throw Exception('Item não encontrado por QR');
+      } else {
+        throw Exception('Falha ao buscar item por QR: ${response.data}');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw Exception('Item não encontrado por QR');
+      }
+      throw Exception('Falha ao buscar item por QR: ${e.response?.data ?? e.message}');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateItemStock(String id, Map<String, dynamic> payload) async {
+    try {
+      final response = await _apiService.put('/items/$id', data: payload);
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) return data;
+        throw Exception('Formato de resposta inesperado ao atualizar item $id: ${response.data}');
+      } else {
+        throw Exception('Falha ao atualizar item: ${response.data}');
+      }
+    } on DioException catch (e) {
+      throw Exception('Falha ao atualizar item: ${e.response?.data ?? e.message}');
+    }
+  }
+
+  // Suporte: buscar itens por filtros (ex.: itemCode) para obter o id após criação
+  Future<List<Map<String, dynamic>>> searchItems({
+    String? itemCode,
+    String? sectionId,
+    String? itemTypeId,
+    bool? isActive,
+    String? itemId,
+  }) async {
+    try {
+      final Map<String, dynamic> queryParams = {};
+      if (itemCode != null && itemCode.isNotEmpty) queryParams['itemCode'] = itemCode;
+      if (sectionId != null && sectionId.isNotEmpty) queryParams['sectionId'] = sectionId;
+      if (itemTypeId != null && itemTypeId.isNotEmpty) queryParams['itemTypeId'] = itemTypeId;
+      if (isActive != null) queryParams['isActive'] = isActive.toString();
+      if (itemId != null && itemId.isNotEmpty) queryParams['itemId'] = itemId;
+
+      final response = await _apiService.get('/items', queryParameters: queryParams);
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        } else if (data is Map && data.containsKey('content')) {
+          return List<Map<String, dynamic>>.from(data['content']);
+        }
+        throw Exception('Formato de resposta inesperado em searchItems: ${response.data}');
+      }
+      throw Exception('Falha ao buscar itens: ${response.data}');
+    } on DioException catch (e) {
+      throw Exception('Falha ao buscar itens: ${e.response?.data ?? e.message}');
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'presentation/pages/loginPage.dart';
 import 'core/theme/app_theme.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'presentation/pages/menu.dart';
 import 'presentation/pages/products/registrationPage.dart';
 import 'presentation/pages/user/user_management_page.dart';
@@ -10,18 +11,15 @@ import 'presentation/pages/user/managers_list_page.dart';
 import 'presentation/pages/stock/stock_list_page.dart';
 import 'presentation/pages/stock/stock_detail_page.dart';
 import 'presentation/pages/user/user_register_page.dart';
-import 'presentation/pages/supplier/registration_supplier_page.dart';
-import 'presentation/pages/supplier/list_supplier_simple.dart';
-import 'presentation/pages/supplier/supplier_details_page.dart';
 import 'presentation/pages/user/user_profile.dart';
 import 'presentation/pages/adiminMenu.dart';
 import 'presentation/pages/user/select_user_menu.dart';
 import 'presentation/pages/order/order_form_page.dart';
 import 'presentation/pages/order/order_detail_page.dart';
 import 'presentation/pages/user/change_password.dart';
+import 'presentation/pages/scanner_page.dart';
 import 'presentation/pages/pharmacy/expiry_screen.dart';
 import 'presentation/pages/item/loss_registration_page.dart';
-
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -42,6 +40,16 @@ class MyApp extends StatelessWidget {
         darkTheme: AppTheme.dark,
         debugShowCheckedModeBanner: false,
         themeMode: mode,
+        localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: [
+        const Locale('pt', 'BR'),
+        const Locale('en', 'US'),
+        const Locale('zh', 'CN')
+      ],
         initialRoute: '/login',
         onGenerateRoute: (settings) {
           WidgetBuilder builder;
@@ -86,20 +94,7 @@ class MyApp extends StatelessWidget {
             case '/user_register':
               builder = (context) => UserRegisterPage();
               break;
-            case '/supplier_register':
-              builder = (context) => const RegistrationSupplierPage();
-              break;
-            case '/supplier_management':
-              builder = (context) => const ListSupplierPage();
-              break;
-            case '/supplier_details':
-              final supplierId = settings.arguments as String?;
-              if (supplierId != null) {
-                builder = (context) => SupplierDetailsPage(supplierId: supplierId);
-              } else {
-                builder = (context) => const ListSupplierPage();
-              }
-              break;
+            // Rotas de fornecedor removidas
             case '/changePassword':
               builder = (context) => const ChangePassword();
               break;
@@ -126,6 +121,8 @@ class MyApp extends StatelessWidget {
                 builder = (context) => const OrderManagementPage();
               }
               break;
+            case '/scanner':
+              builder = (context) => const ScannerPage();
             case '/pharmacy/expiry':
               builder = (context) => const ExpiryScreen();
               break;
@@ -141,6 +138,9 @@ class MyApp extends StatelessWidget {
               } else {
                 builder = (context) => const StockListPage();
               }
+              break;
+            case '/scanner':
+              builder = (context) => const ScannerPage();
               break;
             default:
               builder = (context) => const MenuPage();

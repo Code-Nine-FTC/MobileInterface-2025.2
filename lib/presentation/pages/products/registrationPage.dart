@@ -58,12 +58,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         return;
       }
 
-      if (values["supplierId"] == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Selecione um fornecedor')),
-        );
-        return;
-      }
+      // Removido: validação de fornecedor
 
       if (values["itemTypeId"] == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -78,11 +73,53 @@ class _RegistrationPageState extends State<RegistrationPage> {
         print('[RegistrationPage] Enviando dados para API: $values');
         
         final api = ItemApiDataSource();
-        await api.createItem(values);
-        
+        final created = await api.createItem(values);
+
+        // Tenta extrair id direto
+        dynamic rawId = created['id'] ?? created['itemId'];
+        int? newItemId = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '');
+
+        // Fallback via itemCode se id não veio
+        final String? submittedItemCode = (values['itemCode'] as String?)?.trim().isEmpty == true
+            ? null
+            : (values['itemCode'] as String?)?.trim();
+        if (newItemId == null && submittedItemCode != null) {
+          try {
+            final list = await api.searchItems(itemCode: submittedItemCode);
+            if (list.isNotEmpty) {
+              final m = list.first;
+              rawId = m['itemId'] ?? m['id'];
+              newItemId = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '');
+            }
+          } catch (_) {}
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Produto registrado com sucesso!')),
         );
+
+        // Se id resolvido, oferece cadastrar lote agora
+        if (newItemId != null) {
+          if (!mounted) return;
+          final createLot = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Adicionar Lote agora?'),
+              content: const Text('Você deseja cadastrar um lote para este produto?'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Depois')),
+                ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Adicionar')),
+              ],
+            ),
+          );
+          if (createLot == true) {
+            // Navega para o detalhe com id garantido; a tela de detalhe pode ter seção de lotes
+            if (!mounted) return;
+            Navigator.pushNamed(context, '/stock_detail', arguments: {'id': newItemId.toString()});
+            return;
+          }
+        }
+
         Navigator.pop(context);
       } catch (e) {
         print('[RegistrationPage] Erro ao registrar produto: $e');

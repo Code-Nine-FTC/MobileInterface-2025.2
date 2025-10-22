@@ -551,9 +551,11 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  // ID do pedido
+                                                  // Número do pedido (preferir orderNumber, fallback para id)
                                                   Text(
-                                                    'Pedido #${order.id}',
+                                                    (order.orderNumber != null && order.orderNumber!.isNotEmpty)
+                                                        ? 'Pedido ${order.orderNumber}'
+                                                        : 'Pedido #${order.id}',
                                                     style: TextStyle(
                                                       fontSize: 18,
                                                       fontWeight: FontWeight.bold,

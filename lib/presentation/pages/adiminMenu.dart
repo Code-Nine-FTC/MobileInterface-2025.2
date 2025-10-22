@@ -116,6 +116,16 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
                     onTap: () => Navigator.pushNamed(context, '/stock'),
                   ),
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildModernCard(
+                    icon: Icons.qr_code_scanner_rounded,
+                    label: 'Escanear',
+                    description: 'Escanear QR Code',
+                    color: const Color.fromARGB(255, 190, 50, 69),
+                    onTap: () => Navigator.pushNamed(context, '/scanner'),
+                  ),
+                ),
               ],
             ),
 

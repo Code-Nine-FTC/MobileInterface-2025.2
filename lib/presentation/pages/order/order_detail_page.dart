@@ -5,7 +5,6 @@ import '../../components/standartScreen.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/api/order_api_data_source.dart';
 import '../../../data/api/item_api_data_source.dart';
-import '../../../data/api/supplier_api_data_source.dart';
 import '../../../core/utils/secure_storage_service.dart';
 import '../../../domain/entities/user.dart';
 import '../../components/navBar.dart';
@@ -148,7 +147,6 @@ import '../../components/navBar.dart';
             name: 'Item $id',
             quantity: 1,
             unit: null,
-            supplierName: null,
           ),
         );
         itemNames[id] = pedidoItem.name;
@@ -459,7 +457,7 @@ import '../../components/navBar.dart';
   User? _currentUser;
     int _selectedIndex = 0;
     final OrderApiDataSource _orderApi = OrderApiDataSource();
-    final SupplierApiDataSource _supplierApi = SupplierApiDataSource();
+  // Fornecedor removido do domínio
     Order? _order;
     bool _isLoading = true;
     String? _error;
@@ -490,24 +488,7 @@ import '../../components/navBar.dart';
         final order = await _orderApi.getOrderById(widget.orderId);
         if (order == null) throw Exception('Pedido não encontrado');
         final orderItems = await _orderApi.getOrderItemsByOrderId(order.id);
-        // Mantém busca de fornecedores se necessário
-        final supplierNames = <int, String>{};
-        for (final supplierId in order.supplierIds) {
-          try {
-            final supplier = await _supplierApi.getSupplierById(supplierId.toString());
-            String name;
-            if (supplier['name'] != null && supplier['name'].toString().trim().isNotEmpty) {
-              name = supplier['name'].toString();
-            } else if (supplier.isEmpty) {
-              name = 'Fornecedor não encontrado (ID $supplierId)';
-            } else {
-              name = supplier.toString();
-            }
-            supplierNames[supplierId] = name;
-          } catch (e) {
-            supplierNames[supplierId] = 'Fornecedor não encontrado (ID $supplierId)';
-          }
-        }
+        // Fornecedores removidos do domínio do pedido
         setState(() {
           _order = order;
           _orderItems = orderItems;
@@ -536,7 +517,11 @@ import '../../components/navBar.dart';
       },
     ),
     body: StandardScreen(
-      title: _order != null ? 'Pedido #${_order!.id}' : 'Detalhes do Pedido',
+    title: _order != null
+      ? (_order!.orderNumber != null && _order!.orderNumber!.isNotEmpty
+        ? 'Pedido ${_order!.orderNumber}'
+        : 'Pedido #${_order!.id}')
+      : 'Detalhes do Pedido',
       child: _isLoading
           ? const Center(
               child: Column(
@@ -662,8 +647,7 @@ import '../../components/navBar.dart';
                           // Card de itens do pedido
                           _buildOrderItemsCard(),
                           const SizedBox(height: 24),
-                          // Card de fornecedores
-                          _buildInfoCards(),
+                          // Card de fornecedores removido
                           const SizedBox(height: 24),
                           if (_currentUser != null && (_currentUser!.role == 'ADMIN' || _currentUser!.role == 'MANAGER') && _order!.status != 'COMPLETED')
                             Column(
@@ -887,6 +871,28 @@ import '../../components/navBar.dart';
               ],
             ),
             const SizedBox(height: 20),
+            // Seção consumidora
+            Row(
+              children: [
+                const Icon(Icons.apartment, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    order.consumerSectionTitle != null && order.consumerSectionTitle!.isNotEmpty
+                        ? 'Seção: ${order.consumerSectionTitle}'
+                        : (order.consumerSectionId != null
+                            ? 'Seção: #${order.consumerSectionId}'
+                            : 'Seção: não informada'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white.withOpacity(0.95),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -970,65 +976,7 @@ import '../../components/navBar.dart';
       );
     }
 
-    Widget _buildInfoCards() {
-  final fornecedoresUnicos = _orderItems
-    .map((item) => item.supplierName)
-    .whereType<String>()
-    .map((name) => name.trim())
-    .where((name) => name.isNotEmpty)
-    .toSet()
-    .toList();
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.business,
-                color: AppColors.infoLight,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Fornecedores',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          fornecedoresUnicos.isEmpty
-              ? const Text('Nenhum fornecedor vinculado.')
-              : Wrap(
-                  children: fornecedoresUnicos.map((name) => Chip(
-                    label: Text(
-                      name,
-                      style: const TextStyle(color: Colors.black87),
-                    ),
-                    backgroundColor: Colors.purple.withOpacity(0.3),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  )).toList(),
-                ),
-        ],
-      ),
-    );
-    }
+    // Removido: cartão de fornecedores
 
   Widget _buildOrderItemsCard() {
     return Card(
