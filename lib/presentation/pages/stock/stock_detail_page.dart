@@ -153,7 +153,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
     await showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
+        builder: (ctx, setDialogState) => AlertDialog(
           title: const Text('Novo Lote'),
           content: SingleChildScrollView(
             child: Form(
@@ -209,7 +209,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
                         locale: const Locale('pt', 'BR'),
                       );
                       if (picked != null) {
-                        setState(() {
+                        setDialogState(() {
                           pickedDate = picked;
                           dateCtrl.text = "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
                         });
