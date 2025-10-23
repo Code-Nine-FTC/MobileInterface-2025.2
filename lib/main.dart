@@ -12,7 +12,7 @@ import 'presentation/pages/stock/stock_list_page.dart';
 import 'presentation/pages/stock/stock_detail_page.dart';
 import 'presentation/pages/user/user_register_page.dart';
 import 'presentation/pages/user/user_profile.dart';
-import 'presentation/pages/adiminMenu.dart';
+import 'presentation/pages/adminMenu.dart';
 import 'presentation/pages/user/select_user_menu.dart';
 import 'presentation/pages/order/order_form_page.dart';
 import 'presentation/pages/order/order_detail_page.dart';
