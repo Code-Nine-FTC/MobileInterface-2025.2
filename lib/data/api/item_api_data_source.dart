@@ -339,16 +339,50 @@ class ItemApiDataSource {
 
   Future<Map<String, dynamic>> updateItemStock(String id, Map<String, dynamic> payload) async {
     try {
+      // Debug: log outgoing payload to help diagnose backend parse issues (e.g., dates)
+      try {
+        print('[ItemApiDataSource] PUT /items/$id payload: ${jsonEncode(payload)}');
+      } catch (_) {}
       final response = await _apiService.put('/items/$id', data: payload);
 
-      if (response.statusCode == 200) {
+      final status = response.statusCode ?? 0;
+      if (status == 200 || status == 204) {
         final data = response.data;
-        if (data is Map<String, dynamic>) return data;
-        throw Exception('Formato de resposta inesperado ao atualizar item $id: ${response.data}');
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
+        if (status == 204 || data == null || (data is String && data.toString().isNotEmpty)) {
+          try {
+            if (data is String) {
+              try {
+                final decoded = jsonDecode(data);
+                if (decoded is Map<String, dynamic>) return decoded;
+              } catch (_) {
+              }
+            }
+            final fresh = await getItemById(id);
+            return fresh;
+          } catch (e) {
+            return {
+              'id': int.tryParse(id) ?? id,
+              'success': true,
+              'message': data?.toString().isNotEmpty == true ? data.toString() : 'Item updated',
+              'statusCode': status,
+            };
+          }
+        }
+        final fresh = await getItemById(id);
+        return fresh;
       } else {
         throw Exception('Falha ao atualizar item: ${response.data}');
       }
     } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      if (status == 401) {
+        throw Exception('Token expirado ou inválido. Faça login novamente.');
+      } else if (status == 403) {
+        throw Exception('Acesso negado. Você não tem permissão para editar itens.');
+      }
       throw Exception('Falha ao atualizar item: ${e.response?.data ?? e.message}');
     }
   }
