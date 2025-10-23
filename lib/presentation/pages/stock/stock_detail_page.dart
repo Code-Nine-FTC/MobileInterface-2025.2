@@ -3,9 +3,9 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:printing/printing.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
-import 'package:cross_file/cross_file.dart';
 
 import '../../../core/theme/app_colors.dart';
+import 'stock_edit_page.dart';
 import '../../components/standartScreen.dart';
 import '../../components/navBar.dart';
 import '../../../core/utils/secure_storage_service.dart';
@@ -153,7 +153,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
     await showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
+        builder: (ctx, setDialogState) => AlertDialog(
           title: const Text('Novo Lote'),
           content: SingleChildScrollView(
             child: Form(
@@ -209,7 +209,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
                         locale: const Locale('pt', 'BR'),
                       );
                       if (picked != null) {
-                        setState(() {
+                        setDialogState(() {
                           pickedDate = picked;
                           dateCtrl.text = "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
                         });
@@ -420,6 +420,12 @@ class _StockDetailPageState extends State<StockDetailPage> {
                           ],
                         ),
                       ),
+                      if (_item != null)
+                        IconButton(
+                          tooltip: 'Editar',
+                          onPressed: _openEditPage,
+                          icon: const Icon(Icons.edit, color: Colors.white),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -451,7 +457,13 @@ class _StockDetailPageState extends State<StockDetailPage> {
                   onTap: () => _showQrDialog(context),
                   child: _modernInfoRow('Código', _item?['id']?.toString() ?? '-', Icons.qr_code),
                 ),
-                _modernInfoRow('Validade', _formatDate(_item?['expirationDate']?.toString()), Icons.event),
+                _modernInfoRow(
+                  'Validade',
+                  _formatDate(
+                    (_item?['expirationDate'] ?? _item?['expireDate'])?.toString(),
+                  ),
+                  Icons.event,
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -972,6 +984,29 @@ class _StockDetailPageState extends State<StockDetailPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao imprimir: $e')));
+    }
+  }
+
+  Future<void> _openEditPage() async {
+    if (_item == null) return;
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StockEditPage(item: _item!),
+      ),
+    );
+    if (!mounted) return;
+    if (result is Map<String, dynamic>) {
+      setState(() {
+        _item = Map<String, dynamic>.from(result);
+        _itemTypeName = _item?['itemType']?.toString();
+        _dataChanged = true;
+      });
+    } else if (result == true) {
+      try {
+        await _fetchItem();
+        setState(() => _dataChanged = true);
+      } catch (_) {}
     }
   }
 }
