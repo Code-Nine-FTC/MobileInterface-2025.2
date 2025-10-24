@@ -13,7 +13,6 @@ class ScannerPage extends StatefulWidget {
 }
 
 class _ScannerPageState extends State<ScannerPage> {
-  String? _result;
   final MobileScannerController _cameraController = MobileScannerController();
   bool _torchOn = false;
   bool _isFront = false;
@@ -46,7 +45,7 @@ class _ScannerPageState extends State<ScannerPage> {
                       HapticFeedback.vibrate();
                     } catch (_) {}
 
-                    setState(() => _result = value);
+                    // store scanned value locally if needed in the future
 
                     final scanned = value.trim();
                     // O backend fornece o campo qrCode já no formato de rota (ex: "/items?code=xxx").
@@ -65,7 +64,18 @@ class _ScannerPageState extends State<ScannerPage> {
                       print('[ScannerPage] Scanned QR -> $uriString');
                       final item = await api.getItemByQrCode(uriString);
                       if (!mounted) return;
-                      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => StockEditPage(item: item)));
+                      final itemId = item['id']?.toString() ?? item['itemId']?.toString();
+                      final itemName = item['name']?.toString() ?? item['itemName']?.toString() ?? '';
+                      if (itemId != null && itemId.isNotEmpty) {
+                        // Navigate to LotManagerPage to manage lots for this item
+                        await Navigator.of(context).pushNamed(
+                          '/lot_manager',
+                          arguments: {'itemId': itemId, 'itemName': itemName},
+                        );
+                      } else {
+                        // fallback to stock edit if id not found
+                        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => StockEditPage(item: item)));
+                      }
                     } catch (e) {
                       // Log detalhado para depuração
                       print('[ScannerPage] Erro ao buscar item por QR ($uriString): $e');

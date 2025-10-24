@@ -20,6 +20,7 @@ import 'presentation/pages/user/change_password.dart';
 import 'presentation/pages/scanner_page.dart';
 import 'presentation/pages/pharmacy/expiry_screen.dart';
 import 'presentation/pages/item/loss_registration_page.dart';
+import 'presentation/pages/stock/lot_manager_page.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -91,6 +92,12 @@ class MyApp extends StatelessWidget {
               builder = (context) =>
                   StockDetailPage(itemId: id, itemData: data);
               break;
+            case '/lot_manager':
+              final args = settings.arguments as Map<String, dynamic>?;
+              final id = args?['itemId']?.toString() ?? args?['id']?.toString();
+              final name = args?['itemName']?.toString() ?? args?['itemName']?.toString();
+              builder = (context) => LotManagerPage(itemId: id, itemName: name);
+              break;
             case '/user_register':
               builder = (context) => UserRegisterPage();
               break;
@@ -121,8 +128,6 @@ class MyApp extends StatelessWidget {
                 builder = (context) => const OrderManagementPage();
               }
               break;
-            case '/scanner':
-              builder = (context) => const ScannerPage();
             case '/pharmacy/expiry':
               builder = (context) => const ExpiryScreen();
               break;
