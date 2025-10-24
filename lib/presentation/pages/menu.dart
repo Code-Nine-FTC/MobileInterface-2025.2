@@ -148,11 +148,11 @@ class _MenuPageState extends State<MenuPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildModernCard(
-                    icon: Icons.qr_code_scanner_rounded,
-                    label: 'Escanear',
-                    description: 'Escanear QR Code',
-                    color: const Color.fromARGB(255, 190, 50, 69),
-                    onTap: () => Navigator.pushNamed(context, '/scanner'),
+                    icon: Icons.analytics_rounded,
+                    label: 'Dashboard',
+                    description: 'Analytics e relatórios',
+                    color: Colors.purple,
+                    onTap: () => Navigator.pushNamed(context, '/analytics_dashboard'),
                   ),
                 ),
               ],
@@ -173,7 +173,16 @@ class _MenuPageState extends State<MenuPage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Mostra o card de Validade apenas para usuários da seção 2 (Farmácia)
+                Expanded(
+                  child: _buildModernCard(
+                    icon: Icons.qr_code_scanner_rounded,
+                    label: 'Escanear',
+                    description: 'Escanear QR Code',
+                    color: const Color.fromARGB(255, 190, 50, 69),
+                    onTap: () => Navigator.pushNamed(context, '/scanner'),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 if (_isPharmacyUser)
                   Expanded(
                     child: _buildModernCard(
@@ -185,7 +194,6 @@ class _MenuPageState extends State<MenuPage> {
                     ),
                   )
                 else
-                  // Espaço vazio para manter o layout consistente
                   const Expanded(child: SizedBox()),
               ],
             ),

@@ -96,7 +96,7 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
             _buildSectionHeader('Ações Principais', Icons.star_rounded),
             const SizedBox(height: 16),
             Row(
-                children: [
+              children: [
                 Expanded(
                   child: _buildModernCard(
                     icon: Icons.add_circle_outline_rounded,
@@ -119,11 +119,11 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildModernCard(
-                    icon: Icons.qr_code_scanner_rounded,
-                    label: 'Escanear',
-                    description: 'Escanear QR Code',
-                    color: const Color.fromARGB(255, 190, 50, 69),
-                    onTap: () => Navigator.pushNamed(context, '/scanner'),
+                    icon: Icons.analytics_rounded,
+                    label: 'Dashboard',
+                    description: 'Analytics e relatórios',
+                    color: Colors.purple,
+                    onTap: () => Navigator.pushNamed(context, '/analytics_dashboard'),
                   ),
                 ),
               ],
@@ -139,13 +139,21 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
                     label: 'Pedidos',
                     description: 'Acompanhar status',
                     color: Colors.orange,
-                    onTap: () =>
-                        Navigator.pushNamed(context, '/order_management'),
+                    onTap: () => Navigator.pushNamed(context, '/order_management'),
                   ),
                 ),
-                
                 const SizedBox(width: 12),
-                  Expanded(
+                Expanded(
+                  child: _buildModernCard(
+                    icon: Icons.qr_code_scanner_rounded,
+                    label: 'Escanear',
+                    description: 'Escanear QR Code',
+                    color: const Color.fromARGB(255, 190, 50, 69),
+                    onTap: () => Navigator.pushNamed(context, '/scanner'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
                   child: _buildModernCard(
                     icon: Icons.calendar_today_rounded,
                     label: 'Validade',
@@ -154,16 +162,6 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
                     onTap: () => Navigator.pushNamed(context, '/pharmacy/expiry'),
                   ),
                 ),
-                // Expanded(
-                //   child: _buildModernCard(
-                //     icon: Icons.local_shipping_rounded,
-                //     label: 'Fornecedores',
-                //     description: 'Gestão de parceiros',
-                //     color: Colors.purple,
-                //     onTap: () =>
-                //         Navigator.pushNamed(context, '/supplier_management'),
-                //   ),
-                // ),
               ],
             ),
           ],

@@ -144,8 +144,8 @@ class MyApp extends StatelessWidget {
                 builder = (context) => const StockListPage();
               }
               break;
-            case '/scanner':
-              builder = (context) => const ScannerPage();
+            case '/analytics_dashboard':
+              builder = (context) => const AnalyticsDashboardPage();
               break;
             default:
               builder = (context) => const MenuPage();
