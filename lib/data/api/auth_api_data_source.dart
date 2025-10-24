@@ -1,6 +1,6 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:mobile_interface_2025_2/domain/entities/user.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'base_api_service.dart';
 import '../../core/utils/secure_storage_service.dart';
 
@@ -59,8 +59,19 @@ class AuthApiDataSource {
       return user;
     }
     catch(e){
+      // Normaliza erros do Dio para mensagens curtas e amigáveis
+      if (e is DioException) {
+        final code = e.response?.statusCode;
+        if (code == 400 || code == 401 || code == 403) {
+          throw Exception('Email ou senha incorretos');
+        }
+        if (code == 500) {
+          throw Exception('Erro no servidor, tente novamente mais tarde');
+        }
+        throw Exception('Não foi possível entrar. Verifique sua conexão e tente novamente.');
+      }
       print('[AuthAPI] Erro no login: ${e.toString()}');
-      rethrow;
+      throw Exception('Email ou senha incorretos');
     }
   }
 
