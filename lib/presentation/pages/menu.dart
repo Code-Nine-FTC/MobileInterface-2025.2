@@ -173,6 +173,16 @@ class _MenuPageState extends State<MenuPage> {
                   ),
                 ),
                 const SizedBox(width: 12),
+                Expanded(
+                  child: _buildModernCard(
+                    icon: Icons.local_shipping_rounded,
+                    label: 'Ordens de Compra',
+                    description: 'Visualizar NEs cadastradas',
+                    color: Colors.indigo,
+                    onTap: () => Navigator.pushNamed(context, '/purchase_orders'),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 // Mostra o card de Validade apenas para usuários da seção 2 (Farmácia)
                 if (_isPharmacyUser)
                   Expanded(

@@ -143,6 +143,16 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
                         Navigator.pushNamed(context, '/order_management'),
                   ),
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildModernCard(
+                    icon: Icons.local_shipping_rounded,
+                    label: 'Ordens de Compra',
+                    description: 'Visualizar NEs cadastradas',
+                    color: Colors.indigo,
+                    onTap: () => Navigator.pushNamed(context, '/purchase_orders'),
+                  ),
+                ),
                 
                 const SizedBox(width: 12),
                   Expanded(

@@ -16,6 +16,8 @@ import 'presentation/pages/adminMenu.dart';
 import 'presentation/pages/user/select_user_menu.dart';
 import 'presentation/pages/order/order_form_page.dart';
 import 'presentation/pages/order/order_detail_page.dart';
+import 'presentation/pages/purchase_order_list_page.dart';
+import 'presentation/pages/purchase_order_detail_page.dart';
 import 'presentation/pages/user/change_password.dart';
 import 'presentation/pages/scanner_page.dart';
 import 'presentation/pages/pharmacy/expiry_screen.dart';
@@ -126,6 +128,21 @@ class MyApp extends StatelessWidget {
                 builder = (context) => OrderDetailPage(orderId: orderId!);
               } else {
                 builder = (context) => const OrderManagementPage();
+              }
+              break;
+            case '/purchase_orders':
+              builder = (context) => const PurchaseOrderListPage();
+              break;
+            case '/purchase_order_detail':
+              final arg = settings.arguments;
+              int? poId;
+              if (arg is int) poId = arg;
+              else if (arg is String) poId = int.tryParse(arg);
+              else if (arg is Map && arg['id'] != null) poId = arg['id'] is int ? arg['id'] : int.tryParse(arg['id'].toString());
+              if (poId != null) {
+                builder = (context) => PurchaseOrderDetailPage(orderId: poId!);
+              } else {
+                builder = (context) => const PurchaseOrderListPage();
               }
               break;
             case '/pharmacy/expiry':
