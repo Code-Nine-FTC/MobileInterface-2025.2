@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/api/auth_api_data_source.dart';
 
@@ -107,8 +106,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           break;
       }
     } catch (e) {
+      // Exibe uma mensagem simples e amigável ao errar o login
+      // independente do erro técnico retornado pela API.
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = 'Email ou senha incorretos';
       });
     } finally {
       setState(() {

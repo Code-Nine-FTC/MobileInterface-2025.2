@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
-import '../../data/api/supplier_api_data_source.dart';
 import '../../data/api/item_type_api_data_source.dart';
  import '../../../core/utils/secure_storage_service.dart';
 
@@ -30,9 +29,10 @@ class ProductFormState extends State<ProductForm> {
   String? _sectionId; // Para ADMIN escolher seção
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _currentStockController = TextEditingController();
+  final TextEditingController _itemCodeController = TextEditingController();
   String? _measure;
   final TextEditingController _expireDateController = TextEditingController();
-  String? _supplierId;
+  // Fornecedor removido do domínio
   String? _itemTypeId;
   final TextEditingController _minimumStockController = TextEditingController();
   final TextEditingController _maximumStockController = TextEditingController();
@@ -41,12 +41,11 @@ class ProductFormState extends State<ProductForm> {
   bool _isActive = true; 
   bool _hasExpiryDate = false; 
 
-  List<Map<String, dynamic>> _suppliers = [];
+  // Removido: fornecedores
   List<Map<String, dynamic>> _itemTypes = [];
   bool _isLoadingData = true;
   String? _loadError;
 
-  final SupplierApiDataSource _supplierApi = SupplierApiDataSource();
   final ItemTypeApiDataSource _itemTypeApi = ItemTypeApiDataSource();
 
   @override
@@ -74,29 +73,19 @@ class ProductFormState extends State<ProductForm> {
       print('[FormProduct] Carregando dados do dropdown para role: $userRole');
 
       final futures = await Future.wait([
-        _supplierApi.getSuppliers(
-          sectionId: sectionId != null ? int.tryParse(sectionId) : null,
-          userRole: userRole,
-        ),
         _itemTypeApi.getItemTypes(
           sectionId: sectionId != null ? int.tryParse(sectionId) : null,
         ),
       ]);
 
       setState(() {
-        _suppliers = futures[0];
-        _itemTypes = futures[1];
+        _itemTypes = futures[0];
         _isLoadingData = false;
-
-        if (_supplierId != null && !_suppliers.any((s) => s['id'].toString() == _supplierId)) {
-          _supplierId = null;
-        }
         if (_itemTypeId != null && !_itemTypes.any((t) => t['id'].toString() == _itemTypeId)) {
           _itemTypeId = null;
         }
       });
-
-      print('[FormProduct] Carregados ${_suppliers.length} fornecedores e ${_itemTypes.length} tipos de item');
+      print('[FormProduct] Carregados ${_itemTypes.length} tipos de item');
     } catch (e) {
       print('[FormProduct] Erro ao carregar dados: $e');
       setState(() {
@@ -127,7 +116,7 @@ class ProductFormState extends State<ProductForm> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao carregar fornecedores e tipos de item: $e'),
+            content: Text('Erro ao carregar tipos de item: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -322,7 +311,7 @@ class ProductFormState extends State<ProductForm> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Carregando fornecedores e tipos...',
+                  'Carregando tipos...',
                   style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
               ],
@@ -517,6 +506,12 @@ class ProductFormState extends State<ProductForm> {
                     controller: _nameController,
                     prefixIcon: Icons.label_outline_rounded,
                     hintText: "Nome do produto",
+                  ),
+                  _buildInput(
+                    "Código do Item (opcional)",
+                    controller: _itemCodeController,
+                    prefixIcon: Icons.qr_code_2_outlined,
+                    hintText: "Ex.: ABC123",
                   ),
                   _buildInput(
                     "Tipo do Item",
@@ -751,72 +746,7 @@ class ProductFormState extends State<ProductForm> {
               ),
             ),
 
-            // Card Fornecedor
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Colors.white, Colors.grey[50]!],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.12),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-                border: Border.all(color: Colors.grey.withOpacity(0.08)),
-              ),
-              padding: const EdgeInsets.all(24),
-              margin: const EdgeInsets.only(bottom: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(Icons.business_rounded, color: AppColors.primaryLight, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Fornecedor',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  _buildInput(
-                    "Fornecedor",
-                    options: _isLoadingData 
-                      ? ["Carregando fornecedores..."]
-                      : _suppliers.isEmpty 
-                        ? ["Nenhum fornecedor encontrado"]
-                        : _suppliers.map((supplier) => "${supplier['id']} - ${supplier['name']}").toList(),
-                    dropdownValue: _supplierId != null && _suppliers.isNotEmpty
-                      ? _suppliers
-                          .where((supplier) => supplier['id'].toString() == _supplierId)
-                          .map((supplier) => "${supplier['id']} - ${supplier['name']}")
-                          .firstOrNull
-                      : null,
-                    prefixIcon: Icons.store_rounded,
-                    enabled: !_isLoadingData && _suppliers.isNotEmpty,
-                    onDropdownChanged: (_isLoadingData || _suppliers.isEmpty) ? null : (val) { 
-                      setState(() { 
-                        _supplierId = val?.split(' - ')[0];
-                      }); 
-                      _notifyChange(); 
-                    },
-                  ),
-                ],
-              ),
-            ),
+            // Card Fornecedor removido
 
             if (_loadError != null) ...[
               Container(
@@ -953,11 +883,11 @@ class ProductFormState extends State<ProductForm> {
     final map = {
       'name': _nameController.text,
       'currentStock': int.tryParse(_currentStockController.text),
+      'itemCode': _itemCodeController.text.isNotEmpty ? _itemCodeController.text : null,
       'measure': _measure,
       'expireDate': _hasExpiryDate && _expireDateController.text.isNotEmpty
           ? _convertDateToIso(_expireDateController.text)
           : null,
-      'supplierId': _supplierId != null ? int.tryParse(_supplierId!) : null,
       'itemTypeId': _itemTypeId != null ? int.tryParse(_itemTypeId!) : null,
       'minimumStock': int.tryParse(_minimumStockController.text),
       'maximumStock': int.tryParse(_maximumStockController.text),
