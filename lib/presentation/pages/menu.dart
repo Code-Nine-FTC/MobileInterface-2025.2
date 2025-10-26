@@ -123,80 +123,60 @@ class _MenuPageState extends State<MenuPage> {
             ),
             _buildSectionHeader('Ações Principais', Icons.star_rounded),
             const SizedBox(height: 16),
-
-            Row(
+            GridView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                mainAxisExtent: 160,
+              ),
               children: [
-                Expanded(
-                  child: _buildModernCard(
-                    icon: Icons.add_circle_outline_rounded,
-                    label: 'Cadastrar',
-                    description: 'Novos produtos',
-                    color: Colors.green,
-                    onTap: () => Navigator.pushNamed(context, '/register_product'),
-                  ),
+                _buildModernCard(
+                  icon: Icons.add_circle_outline_rounded,
+                  label: 'Cadastrar',
+                  description: 'Novos produtos',
+                  color: Colors.green,
+                  onTap: () => Navigator.pushNamed(context, '/register_product'),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildModernCard(
-                    icon: Icons.inventory_2_rounded,
-                    label: 'Estoque',
-                    description: 'Gerenciar produtos',
-                    color: AppColors.infoLight,
-                    onTap: () => Navigator.pushNamed(context, '/stock'),
-                  ),
+                _buildModernCard(
+                  icon: Icons.qr_code_scanner_rounded,
+                  label: 'Escanear',
+                  description: 'Escanear QR Code',
+                  color: const Color.fromARGB(255, 190, 50, 69),
+                  onTap: () => Navigator.pushNamed(context, '/scanner'),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildModernCard(
-                    icon: Icons.qr_code_scanner_rounded,
-                    label: 'Escanear',
-                    description: 'Escanear QR Code',
-                    color: const Color.fromARGB(255, 190, 50, 69),
-                    onTap: () => Navigator.pushNamed(context, '/scanner'),
-                  ),
+                _buildModernCard(
+                  icon: Icons.inventory_2_rounded,
+                  label: 'Estoque',
+                  description: 'Gerenciar produtos',
+                  color: AppColors.infoLight,
+                  onTap: () => Navigator.pushNamed(context, '/stock'),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _buildModernCard(
-                    icon: Icons.list_alt_rounded,
-                    label: 'Pedidos',
-                    description: 'Acompanhar status',
-                    color: Colors.orange,
-                    onTap: () =>
-                        Navigator.pushNamed(context, '/order_management'),
-                  ),
+                _buildModernCard(
+                  icon: Icons.list_alt_rounded,
+                  label: 'Pedidos',
+                  description: 'Acompanhar status',
+                  color: Colors.orange,
+                  onTap: () => Navigator.pushNamed(context, '/order_management'),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildModernCard(
-                    icon: Icons.local_shipping_rounded,
-                    label: 'Ordens de Compra',
-                    description: 'Gerenciar ordens de compra',
-                    color: Colors.indigo,
-                    onTap: () => Navigator.pushNamed(context, '/purchase_orders'),
-                  ),
+                _buildModernCard(
+                  icon: Icons.local_shipping_rounded,
+                  label: 'Ordens de Compra',
+                  description: 'Gerenciar ordens de compra',
+                  color: Colors.indigo,
+                  onTap: () => Navigator.pushNamed(context, '/purchase_orders'),
                 ),
-                const SizedBox(width: 12),
                 // Mostra o card de Validade apenas para usuários da seção 2 (Farmácia)
                 if (_isPharmacyUser)
-                  Expanded(
-                    child: _buildModernCard(
-                      icon: Icons.calendar_today_rounded,
-                      label: 'Validade',
-                      description: 'Controle de vencimentos',
-                      color: Colors.red,
-                      onTap: () => Navigator.pushNamed(context, '/pharmacy/expiry'),
-                    ),
-                  )
-                else
-                  // Espaço vazio para manter o layout consistente
-                  const Expanded(child: SizedBox()),
+                  _buildModernCard(
+                    icon: Icons.calendar_today_rounded,
+                    label: 'Validade',
+                    description: 'Controle de vencimentos',
+                    color: Colors.red,
+                    onTap: () => Navigator.pushNamed(context, '/pharmacy/expiry'),
+                  ),
               ],
             ),
           ],
@@ -283,7 +263,7 @@ class _MenuPageState extends State<MenuPage> {
                   ),
                   child: Icon(icon, color: Colors.white, size: 22),
                 ),
-                const Spacer(),
+                const SizedBox(height: 10),
                 Text(
                   label,
                   style: TextStyle(
@@ -292,7 +272,7 @@ class _MenuPageState extends State<MenuPage> {
                     color: Colors.grey[800],
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   description,
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),

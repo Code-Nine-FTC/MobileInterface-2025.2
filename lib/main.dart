@@ -23,6 +23,7 @@ import 'presentation/pages/scanner_page.dart';
 import 'presentation/pages/pharmacy/expiry_screen.dart';
 import 'presentation/pages/item/loss_registration_page.dart';
 import 'presentation/pages/stock/lot_manager_page.dart';
+import 'presentation/pages/analytics/analytics_dashboard_page.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -160,6 +161,9 @@ class MyApp extends StatelessWidget {
               } else {
                 builder = (context) => const StockListPage();
               }
+              break;
+            case '/analytics_dashboard':
+              builder = (context) => const AnalyticsDashboardPage();
               break;
             case '/scanner':
               builder = (context) => const ScannerPage();
