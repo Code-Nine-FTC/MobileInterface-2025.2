@@ -35,34 +35,72 @@ class SectionMonthlyChart extends StatelessWidget {
       Colors.brown,
     ];
 
+    // Compute Y bounds
     final minY = 0.0;
     double maxY = 0.0;
     for (final v in safeSeries.values.expand((e) => e)) {
       if (v > maxY) maxY = v;
     }
-    if (maxY <= 0) maxY = 1.0; // keep positive bounds to show the grid/axes even when zeros
+    if (maxY <= 0) maxY = 1.0; // keep positive bounds to show axes even when zeros
 
-    final spotsByLabel = <String, List<FlSpot>>{};
-    for (final entry in safeSeries.entries) {
-      final values = entry.value;
-      final spots = <FlSpot>[];
-      for (int i = 0; i < months.length; i++) {
-        final y = i < values.length ? values[i] : 0.0;
-        spots.add(FlSpot(i.toDouble(), y));
+    // Build grouped bar data: one group per month, one rod per series
+    final labels = safeSeries.keys.toList();
+    final valuesByLabel = safeSeries; // label -> list of values per month
+
+    final barGroups = <BarChartGroupData>[];
+    for (int monthIdx = 0; monthIdx < months.length; monthIdx++) {
+      final rods = <BarChartRodData>[];
+      for (int sIdx = 0; sIdx < labels.length; sIdx++) {
+        final label = labels[sIdx];
+        final values = valuesByLabel[label] ?? const <double>[];
+        final y = monthIdx < values.length ? (values[monthIdx]) : 0.0;
+        rods.add(
+          BarChartRodData(
+            toY: y,
+            color: palette[sIdx % palette.length],
+            width: 10,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        );
       }
-      spotsByLabel[entry.key] = spots;
+      barGroups.add(
+        BarChartGroupData(
+          x: monthIdx,
+          barsSpace: 6,
+          barRods: rods,
+        ),
+      );
     }
+
+    // Integer tick step for Y axis
+    final double yInterval = () {
+      final step = (maxY / 5).ceil();
+      return step <= 0 ? 1.0 : step.toDouble();
+    }();
 
     return SizedBox(
       height: height,
-      child: LineChart(
-        LineChartData(
+      child: BarChart(
+        BarChartData(
           minY: minY,
-          maxY: maxY * 1.2,
-          gridData: FlGridData(show: true, horizontalInterval: maxY / 4),
+          maxY: (maxY + yInterval), // add headroom
+          gridData: FlGridData(show: true, horizontalInterval: yInterval),
           titlesData: FlTitlesData(
             leftTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: true, reservedSize: 40),
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 40,
+                interval: yInterval,
+                getTitlesWidget: (value, meta) {
+                  // Show only integer labels
+                  final intVal = value.round();
+                  if ((value - intVal).abs() > 1e-6) {
+                    return const SizedBox.shrink();
+                  }
+                  if (intVal < 0) return const SizedBox.shrink();
+                  return Text('$intVal', style: const TextStyle(fontSize: 10));
+                },
+              ),
             ),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
@@ -89,34 +127,21 @@ class SectionMonthlyChart extends StatelessWidget {
             show: true,
             border: Border.all(color: Colors.grey.shade300),
           ),
-          lineTouchData: LineTouchData(
-            handleBuiltInTouches: true,
-            touchTooltipData: LineTouchTooltipData(
-              getTooltipItems: (spots) {
-                return spots.map((s) {
-                  final label = spotsByLabel.keys.elementAt(spots.indexOf(s));
-                  final i = s.x.toInt();
-                  final m = months[i];
-                  return LineTooltipItem(
-                    '$label\n${m.month.toString().padLeft(2, '0')}/${m.year}: ${s.y.toStringAsFixed(0)}',
-                    const TextStyle(color: Colors.white),
-                  );
-                }).toList();
+          barGroups: barGroups,
+          barTouchData: BarTouchData(
+            enabled: true,
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                final label = labels[rodIndex];
+                final m = months[group.x.toInt()];
+                final y = rod.toY;
+                return BarTooltipItem(
+                  '$label\n${m.month.toString().padLeft(2, '0')}/${m.year}: ${y.toStringAsFixed(0)}',
+                  const TextStyle(color: Colors.white),
+                );
               },
             ),
           ),
-          lineBarsData: [
-            for (int idx = 0; idx < spotsByLabel.length; idx++)
-              LineChartBarData(
-                isCurved: false,
-                color: palette[idx % palette.length],
-                barWidth: 2,
-                dotData: FlDotData(show: false),
-                spots: spotsByLabel.values.elementAt(idx),
-              ),
-          ],
-          // Keep space even if only zeros
-          clipData: const FlClipData.all(),
         ),
       ),
     );
