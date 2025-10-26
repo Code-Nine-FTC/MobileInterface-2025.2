@@ -1,17 +1,27 @@
+
+import 'dart:convert';
 import '../../domain/entities/order_item_response.dart';
 
 import '../../domain/entities/order.dart';
 import 'base_api_service.dart';
+import 'package:dio/dio.dart';
 
 class OrderApiDataSource extends BaseApiService {
+  String _yyyyMmDd(DateTime d) {
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '${d.year}-$m-$day';
+  }
   /// Atualiza os itens de um pedido existente
-  Future<bool> updateOrderItems(int orderId, Map<int, int> itemQuantities, DateTime withdrawDay) async {
+  Future<bool> updateOrderItems(int orderId, Map<int, int> itemQuantities, DateTime withdrawDay, {int? consumerSectionId}) async {
   print('[DEBUG] IDs enviados para updateOrderItems: ${itemQuantities.keys.toList()}');
     // Converte o mapa para Map<String, int> para o backend, se necessário
     final Map<String, int> itemQuantitiesStr = itemQuantities.map((k, v) => MapEntry(k.toString(), v));
     final body = {
-      'withdrawDay': withdrawDay.toIso8601String(),
+      // Backend pode esperar apenas a data (yyyy-MM-dd)
+      'withdrawDay': _yyyyMmDd(withdrawDay),
       'itemQuantities': itemQuantitiesStr,
+      if (consumerSectionId != null) 'consumerSectionId': consumerSectionId,
     };
     print('[OrderApiDataSource] Enviando updateOrderItems: $body');
     final response = await put(
@@ -42,8 +52,14 @@ class OrderApiDataSource extends BaseApiService {
     return response.statusCode == 200;
   }
 
-  Future<bool> completeOrder(int orderId) async {
-    final response = await patch('/orders/complete/$orderId');
+  Future<bool> completeOrder(int orderId, DateTime withdrawDay) async {
+    // Backend espera LocalDateTime ISO-8601 completo (ex: "2025-10-20T15:00:00")
+    final body = jsonEncode(withdrawDay.toIso8601String());
+    final response = await patch(
+      '/orders/complete/$orderId',
+      data: body,
+      options: Options(contentType: 'application/json'),
+    );
     return response.statusCode == 200;
   }
   Future<bool> cancelOrder(int orderId) async {
@@ -51,25 +67,44 @@ class OrderApiDataSource extends BaseApiService {
     return response.statusCode == 200;
   }
   Future<Order?> createOrder({
-    required DateTime withdrawDay,
     required Map<String, int> itemQuantities,
+    required int consumerSectionId,
+    DateTime? withdrawDay,
+    required String orderNumber, // obrigatório: número manual do pedido
   }) async {
-    final response = await post(
-      '/orders',
-      data: {
-        'withdrawDay': withdrawDay.toIso8601String(),
-        'itemQuantities': itemQuantities,
-      },
-    );
-    if (response.statusCode == 200) {
-      if (response.data is Map<String, dynamic>) {
-        return Order.fromJson(response.data);
-      } else {
-        // Qualquer outro tipo de resposta (String, null, etc): considera sucesso
+    // Fluxo sem fornecedor: envia apenas itemQuantities e opcionais sectionId/withdrawDay
+    final payload = {
+      'itemQuantities': itemQuantities,
+      'consumerSectionId': consumerSectionId,
+      if (withdrawDay != null) 'withdrawDay': _yyyyMmDd(withdrawDay),
+      'orderNumber': orderNumber.trim(),
+    };
+    print('[OrderApiDataSource] POST /orders payload: $payload');
+    try {
+      final response = await post('/orders', data: payload);
+      print('[OrderApiDataSource] createOrder status=${response.statusCode} data=${response.data}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Backend retorna { id: <novoId> } — não precisamos parsear Order completo
         return null;
       }
-    } else {
       throw Exception('Erro ao criar pedido: ${response.data}');
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      final data = e.response?.data;
+      final msg = data?.toString() ?? e.message ?? 'Erro desconhecido ao criar pedido';
+      if (code == 409) {
+        throw Exception('Número do pedido já existente. Escolha outro.');
+      }
+      if (code == 400) {
+        if (msg.toLowerCase().contains('consumersectionid')) {
+          throw Exception('consumerSectionId é obrigatório ou inválido.');
+        }
+        if (msg.toLowerCase().contains('consumer')) {
+          throw Exception('A seção informada não é do tipo CONSUMER.');
+        }
+      }
+      // Não tentamos criar sem orderNumber porque ele é obrigatório no app.
+      throw Exception('Erro ao criar pedido: $msg');
     }
   }
 
@@ -91,14 +126,14 @@ class OrderApiDataSource extends BaseApiService {
     int? orderId,
     String? status,
     int? userId,
-    int? supplierId,
     int? sectionId,
   }) async {
-    // Não enviar nenhum filtro para buscar todos os pedidos
-    final response = await get(
-      '/orders',
-      queryParameters: null,
-    );
+    final Map<String, dynamic> qp = {};
+    if (sectionId != null) qp['sectionId'] = sectionId;
+    if (orderId != null) qp['orderId'] = orderId;
+    if (status != null) qp['status'] = status;
+    if (userId != null) qp['userId'] = userId;
+    final response = await get('/orders', queryParameters: qp.isEmpty ? null : qp);
     if (response.statusCode == 200) {
       final data = response.data;
       print('Resposta bruta da API /orders:');

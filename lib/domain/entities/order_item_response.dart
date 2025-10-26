@@ -4,7 +4,6 @@ class OrderItemResponse {
   final String name;
   final int quantity;
   final String? unit;
-  final String? supplierName;
 
   OrderItemResponse({
     required this.id,
@@ -12,7 +11,6 @@ class OrderItemResponse {
     required this.name,
     required this.quantity,
     this.unit,
-    this.supplierName,
   });
 
   factory OrderItemResponse.fromJson(Map<String, dynamic> json) {
@@ -22,7 +20,6 @@ class OrderItemResponse {
       name: json['name'] ?? json['itemName'] ?? '',
       quantity: json['quantity'] ?? 0,
       unit: json['unit'],
-      supplierName: json['supplierName'],
     );
   }
 }

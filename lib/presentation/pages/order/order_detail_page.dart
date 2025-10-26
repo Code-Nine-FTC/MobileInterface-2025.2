@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../../../domain/entities/order_item_response.dart';
 import '../../../domain/entities/order.dart';
@@ -6,7 +5,6 @@ import '../../components/standartScreen.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/api/order_api_data_source.dart';
 import '../../../data/api/item_api_data_source.dart';
-import '../../../data/api/supplier_api_data_source.dart';
 import '../../../core/utils/secure_storage_service.dart';
 import '../../../domain/entities/user.dart';
 import '../../components/navBar.dart';
@@ -20,6 +18,15 @@ import '../../components/navBar.dart';
   }
 
   class _OrderDetailPageState extends State<OrderDetailPage> {
+
+  Future<void> _completeOrderWithDate(DateTime date) async {
+  await _orderApi.completeOrder(_order!.id, date);
+    await _loadOrderDetails();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Pedido concluído em ${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}')),
+    );
+  }
+
   // Opções de status para o pedido
   List<Map<String, dynamic>> get statusOptions => [
     {
@@ -102,17 +109,6 @@ import '../../components/navBar.dart';
   }
 
 
-  Future<void> _completeOrder() async {
-    setState(() => _isLoading = true);
-    final success = await _orderApi.completeOrder(_order!.id);
-    setState(() => _isLoading = false);
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pedido completado!')));
-      await _loadOrderDetails();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erro ao completar pedido.')));
-    }
-  }
 
   Future<void> _showEditItemsDialog() async {
     if (_order == null) return;
@@ -151,7 +147,6 @@ import '../../components/navBar.dart';
             name: 'Item $id',
             quantity: 1,
             unit: null,
-            supplierName: null,
           ),
         );
         itemNames[id] = pedidoItem.name;
@@ -462,7 +457,7 @@ import '../../components/navBar.dart';
   User? _currentUser;
     int _selectedIndex = 0;
     final OrderApiDataSource _orderApi = OrderApiDataSource();
-    final SupplierApiDataSource _supplierApi = SupplierApiDataSource();
+  // Fornecedor removido do domínio
     Order? _order;
     bool _isLoading = true;
     String? _error;
@@ -493,24 +488,7 @@ import '../../components/navBar.dart';
         final order = await _orderApi.getOrderById(widget.orderId);
         if (order == null) throw Exception('Pedido não encontrado');
         final orderItems = await _orderApi.getOrderItemsByOrderId(order.id);
-        // Mantém busca de fornecedores se necessário
-        final supplierNames = <int, String>{};
-        for (final supplierId in order.supplierIds) {
-          try {
-            final supplier = await _supplierApi.getSupplierById(supplierId.toString());
-            String name;
-            if (supplier['name'] != null && supplier['name'].toString().trim().isNotEmpty) {
-              name = supplier['name'].toString();
-            } else if (supplier.isEmpty) {
-              name = 'Fornecedor não encontrado (ID $supplierId)';
-            } else {
-              name = supplier.toString();
-            }
-            supplierNames[supplierId] = name;
-          } catch (e) {
-            supplierNames[supplierId] = 'Fornecedor não encontrado (ID $supplierId)';
-          }
-        }
+        // Fornecedores removidos do domínio do pedido
         setState(() {
           _order = order;
           _orderItems = orderItems;
@@ -539,7 +517,11 @@ import '../../components/navBar.dart';
       },
     ),
     body: StandardScreen(
-      title: _order != null ? 'Pedido #${_order!.id}' : 'Detalhes do Pedido',
+    title: _order != null
+      ? (_order!.orderNumber != null && _order!.orderNumber!.isNotEmpty
+        ? 'Pedido ${_order!.orderNumber}'
+        : 'Pedido #${_order!.id}')
+      : 'Detalhes do Pedido',
       child: _isLoading
           ? const Center(
               child: Column(
@@ -665,36 +647,84 @@ import '../../components/navBar.dart';
                           // Card de itens do pedido
                           _buildOrderItemsCard(),
                           const SizedBox(height: 24),
-                          // Card de fornecedores
-                          _buildInfoCards(),
+                          // Card de fornecedores removido
                           const SizedBox(height: 24),
-                          if (_currentUser != null && (_currentUser!.role == 'ADMIN' || _currentUser!.role == 'MANAGER'))
+                          if (_currentUser != null && (_currentUser!.role == 'ADMIN' || _currentUser!.role == 'MANAGER') && _order!.status != 'COMPLETED')
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                // Um botão para cada ação: Aprovar, Concluir, Processar, Cancelar
+                                // ...existing code for buttons and popup menu...
                                 Wrap(
                                   spacing: 12,
                                   runSpacing: 12,
                                   alignment: WrapAlignment.center,
                                   children: [
+                                    // ...existing code for ElevatedButton.icon widgets...
                                     ElevatedButton.icon(
                                       onPressed: _approveOrder,
                                       icon: const Icon(Icons.check_circle),
                                       label: const Text('Aprovar'),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
+                                        backgroundColor: Colors.teal,
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                       ),
                                     ),
                                     ElevatedButton.icon(
-                                      onPressed: _completeOrder,
+                                      onPressed: () async {
+                                        final today = DateTime.now();
+                                        final dateController = TextEditingController(
+                                          text: "${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}"
+                                        );
+                                        final result = await showDialog<DateTime?>(
+                                          context: context,
+                                          builder: (context) {
+                                            return AlertDialog(
+                                              title: const Text('Data de conclusão'),
+                                              content: TextFormField(
+                                                controller: dateController,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Data de conclusão',
+                                                  hintText: 'DD/MM/AAAA',
+                                                ),
+                                                keyboardType: TextInputType.datetime,
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context),
+                                                  child: const Text('Cancelar'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    final parts = dateController.text.split('/');
+                                                    if (parts.length == 3) {
+                                                      final day = int.tryParse(parts[0]);
+                                                      final month = int.tryParse(parts[1]);
+                                                      final year = int.tryParse(parts[2]);
+                                                      if (day != null && month != null && year != null) {
+                                                        Navigator.pop(context, DateTime(year, month, day));
+                                                        return;
+                                                      }
+                                                    }
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(content: Text('Data inválida!')),
+                                                    );
+                                                  },
+                                                  child: const Text('Confirmar'),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                        if (result != null) {
+                                          _completeOrderWithDate(result);
+                                        }
+                                      },
                                       icon: const Icon(Icons.done_all),
                                       label: const Text('Concluir'),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.orange,
+                                        backgroundColor: Colors.green,
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -713,9 +743,9 @@ import '../../components/navBar.dart';
                                         }
                                       },
                                       icon: const Icon(Icons.settings),
-                                      label: const Text('Processar'),
+                                      label: const Text('Em andamento'),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue,
+                                        backgroundColor: Colors.amber,
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -734,46 +764,7 @@ import '../../components/navBar.dart';
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: PopupMenuButton<String>(
-                                    icon: const Icon(Icons.more_vert, color: Colors.black87),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                    onSelected: (value) {
-                                      switch (value) {
-                                        case 'status':
-                                          _showEditStatusDialog();
-                                          break;
-                                        case 'itens':
-                                          _showEditItemsDialog();
-                                          break;
-                                      }
-                                    },
-                                    itemBuilder: (context) => [
-                                      PopupMenuItem(
-                                        value: 'status',
-                                        child: Row(
-                                          children: const [
-                                            Icon(Icons.edit, color: Colors.blue),
-                                            SizedBox(width: 8),
-                                            Text('Editar Status'),
-                                          ],
-                                        ),
-                                      ),
-                                      PopupMenuItem(
-                                        value: 'itens',
-                                        child: Row(
-                                          children: const [
-                                            Icon(Icons.edit_note, color: Colors.orange),
-                                            SizedBox(width: 8),
-                                            Text('Editar Itens'),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                              
                               ],
                             ),
                         ],
@@ -785,12 +776,12 @@ import '../../components/navBar.dart';
 
     Widget _buildOrderHeader() {
       final order = _order!;
-      // Mapeia status para label e cor igual statusOptions
+
       final statusMap = {
         'PENDING': {'label': 'PENDENTE', 'color': Colors.orange},
-        'APPROVED': {'label': 'APROVADO', 'color': Colors.blue},
+        'APPROVED': {'label': 'APROVADO', 'color': Colors.teal},
         'CANCELED': {'label': 'CANCELADO', 'color': Colors.red},
-        'COMPLETED': {'label': 'APROVADO', 'color': Colors.green},
+        'COMPLETED': {'label': 'CONCLUÍDO', 'color': Colors.green},
       };
       final statusInfo = statusMap[order.status] ?? {'label': order.status, 'color': Colors.grey};
       final statusLabel = statusInfo['label'] as String;
@@ -866,7 +857,9 @@ import '../../components/navBar.dart';
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Data de retirada: ${_formatDate(order.withdrawDay)}',
+                        order.status == 'COMPLETED'
+                          ? 'Data de retirada: ${_formatDate(order.withdrawDay)}'
+                          : 'Data de retirada: ${_formatDate(order.withdrawDay)}',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white.withOpacity(0.9),
@@ -878,6 +871,28 @@ import '../../components/navBar.dart';
               ],
             ),
             const SizedBox(height: 20),
+            // Seção consumidora
+            Row(
+              children: [
+                const Icon(Icons.apartment, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    order.consumerSectionTitle != null && order.consumerSectionTitle!.isNotEmpty
+                        ? 'Seção: ${order.consumerSectionTitle}'
+                        : (order.consumerSectionId != null
+                            ? 'Seção: #${order.consumerSectionId}'
+                            : 'Seção: não informada'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white.withOpacity(0.95),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -885,12 +900,11 @@ import '../../components/navBar.dart';
                   children: [
                     Builder(
                       builder: (context) {
-                        // Mapeia status para cor e label
                         final statusMap = {
                           'PENDING': {'label': 'PENDENTE', 'color': Colors.orange},
-                          'APPROVED': {'label': 'APROVADO', 'color': Colors.blue},
+                          'APPROVED': {'label': 'APROVADO', 'color': Colors.teal},
                           'CANCELED': {'label': 'CANCELADO', 'color': Colors.red},
-                          'COMPLETED': {'label': 'APROVADO', 'color': Colors.green},
+                          'COMPLETED': {'label': 'CONCLUÍDO', 'color': Colors.green},
                         };
                         final status = order.status;
                         final statusInfo = statusMap[status] ?? {'label': status, 'color': Colors.grey};
@@ -955,7 +969,6 @@ import '../../components/navBar.dart';
                     ),
                   ],
                 ),
-                // Coluna de 'Última atualização' removida
               ],
             ),
           ],
@@ -963,66 +976,7 @@ import '../../components/navBar.dart';
       );
     }
 
-    Widget _buildInfoCards() {
-    // Extrai nomes únicos dos fornecedores dos itens do pedido
-  final fornecedoresUnicos = _orderItems
-    .map((item) => item.supplierName)
-    .whereType<String>()
-    .map((name) => name.trim())
-    .where((name) => name.isNotEmpty)
-    .toSet()
-    .toList();
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.business,
-                color: AppColors.infoLight,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Fornecedores',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          fornecedoresUnicos.isEmpty
-              ? const Text('Nenhum fornecedor vinculado.')
-              : Wrap(
-                  children: fornecedoresUnicos.map((name) => Chip(
-                    label: Text(
-                      name,
-                      style: const TextStyle(color: Colors.black87),
-                    ),
-                    backgroundColor: Colors.purple.withOpacity(0.3),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  )).toList(),
-                ),
-        ],
-      ),
-    );
-    }
+    // Removido: cartão de fornecedores
 
   Widget _buildOrderItemsCard() {
     return Card(
@@ -1061,4 +1015,4 @@ import '../../components/navBar.dart';
       ),
     );
   }
-  }
+}
