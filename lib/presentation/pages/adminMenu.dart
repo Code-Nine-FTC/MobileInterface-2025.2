@@ -120,6 +120,13 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
                   onTap: () => Navigator.pushNamed(context, '/stock'),
                 ),
                 _buildModernCard(
+                  icon: Icons.local_shipping_rounded,
+                  label: 'Ordens de Compra',
+                  description: 'Gerenciar ordens de compra',
+                  color: Colors.indigo,
+                  onTap: () => Navigator.pushNamed(context, '/purchase_orders'),
+                ),
+                _buildModernCard(
                   icon: Icons.analytics_rounded,
                   label: 'Dashboard',
                   description: 'Analytics e relatórios',
@@ -187,6 +194,7 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
     required VoidCallback onTap,
   }) {
     return Container(
+      height: 148,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -209,12 +217,12 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
           borderRadius: BorderRadius.circular(20),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -230,13 +238,13 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
                       ),
                     ],
                   ),
-                  child: Icon(icon, color: Colors.white, size: 24),
+                  child: Icon(icon, color: Colors.white, size: 22),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: Colors.grey[800],
                   ),
