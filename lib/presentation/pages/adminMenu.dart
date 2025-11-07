@@ -154,6 +154,13 @@ class _AdiminMenuPageState extends State<AdiminMenuPage> {
                   color: Colors.red,
                   onTap: () => Navigator.pushNamed(context, '/pharmacy/expiry'),
                 ),
+                _buildModernCard(
+                  icon: Icons.chat_bubble_rounded,
+                  label: 'Chat',
+                  description: 'Converse em tempo real',
+                  color: Colors.teal,
+                  onTap: () => Navigator.pushNamed(context, '/chat'),
+                ),
               ],
             ),
           ],
