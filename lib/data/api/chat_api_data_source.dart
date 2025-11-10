@@ -40,6 +40,11 @@ class ChatApiDataSource {
     await _api.put('/api/chat/rooms/$roomId/close');
   }
 
+  // Tenta deletar permanentemente a sala (se backend suportar endpoint REST DELETE)
+  Future<void> deleteRoom(String roomId) async {
+    await _api.delete('/api/chat/rooms/$roomId');
+  }
+
   Future<void> reopenRoom(String roomId) async {
     await _api.put('/api/chat/rooms/$roomId/reopen');
   }

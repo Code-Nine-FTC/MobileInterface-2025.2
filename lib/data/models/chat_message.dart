@@ -6,6 +6,7 @@ class ChatMessage {
   final String content;
   final DateTime timestamp;
   final bool read;
+  final String? clientMessageId; // identificador gerado pelo cliente para dedupe
 
   ChatMessage({
     required this.id,
@@ -15,18 +16,47 @@ class ChatMessage {
     required this.content,
     required this.timestamp,
     required this.read,
+    this.clientMessageId,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    // Extrai possíveis formatos de sender
+    String senderId = json['senderId']?.toString() ?? json['sender']?.toString() ?? '';
+    String senderName = json['senderName']?.toString() ?? 'Usuário';
+    final senderObj = json['sender'];
+    if (senderObj is Map<String, dynamic>) {
+      senderId = senderObj['id']?.toString() ?? senderId;
+      senderName = senderObj['name']?.toString() ?? senderObj['fullName']?.toString() ?? senderName;
+    }
+
+    // Conteúdo pode vir em várias chaves
+    final content = json['content']?.toString() ??
+        json['text']?.toString() ??
+        json['message']?.toString() ??
+        json['body']?.toString() ?? '';
+
+    // Timestamp com chaves alternativas
+    final tsRaw = json['timestamp']?.toString() ??
+        json['createdAt']?.toString() ??
+        json['sentAt']?.toString() ??
+        json['date']?.toString() ??
+        json['createdDate']?.toString() ??
+        json['time']?.toString() ?? '';
+    final ts = DateTime.tryParse(tsRaw) ?? DateTime.now();
+
+    // Flag de leitura alternativa
+    final isRead = json['read'] == true || json['seen'] == true || json['status']?.toString() == 'READ';
+
     return ChatMessage(
       id: json['id'].toString(),
       // compat: aceita 'chatRoomId', 'roomId' ou 'room'
       roomId: json['chatRoomId']?.toString() ?? json['roomId']?.toString() ?? json['room']?.toString() ?? '',
-      senderId: json['senderId']?.toString() ?? json['sender']?.toString() ?? '',
-      senderName: json['senderName']?.toString() ?? 'Usuário',
-      content: json['content']?.toString() ?? '',
-      timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '') ?? DateTime.now(),
-      read: json['read'] == true,
+      senderId: senderId,
+      senderName: senderName,
+      content: content,
+      timestamp: ts,
+      read: isRead,
+      clientMessageId: json['clientMessageId']?.toString(),
     );
   }
 }

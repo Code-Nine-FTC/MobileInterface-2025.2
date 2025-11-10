@@ -34,6 +34,32 @@ class ChatRoom {
         timestamp: DateTime.tryParse(json['lastMessageTimestamp']?.toString() ?? '') ?? DateTime.now(),
         read: true,
       );
+    } else if (json['latestMessage'] != null) {
+      // Alternativa: alguns backends usam 'latestMessage'
+      final lm = json['latestMessage'];
+      if (lm is Map<String, dynamic>) {
+        last = ChatMessage.fromJson(lm);
+      } else if (lm is String && lm.trim().isNotEmpty) {
+        last = ChatMessage(
+          id: 'last-${json['id']}',
+          roomId: json['id'].toString(),
+          senderId: '',
+          senderName: 'Mensagem',
+          content: lm,
+          timestamp: DateTime.now(),
+          read: true,
+        );
+      }
+    } else if (json['lastMessageText'] != null) {
+      last = ChatMessage(
+        id: 'last-${json['id']}',
+        roomId: json['id'].toString(),
+        senderId: json['lastMessageUserId']?.toString() ?? '',
+        senderName: json['lastMessageUserName']?.toString() ?? 'Usuário',
+        content: json['lastMessageText'].toString(),
+        timestamp: DateTime.tryParse(json['lastMessageDate']?.toString() ?? '') ?? DateTime.now(),
+        read: true,
+      );
     }
     return ChatRoom(
       id: json['id'].toString(),

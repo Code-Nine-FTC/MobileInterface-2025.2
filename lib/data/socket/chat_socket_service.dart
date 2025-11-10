@@ -112,13 +112,16 @@ class ChatSocketService {
     return _typingControllers[roomId]!.stream;
   }
 
-  void sendMessage({required String roomId, required String content}) {
+  void sendMessage({required String roomId, required String content, String? clientMessageId}) {
     // Envia ambos campos para compatibilidade: chatRoomId e roomId
-    final payload = {
+    final payload = <String, dynamic>{
       'chatRoomId': roomId,
       'roomId': roomId,
       'content': content,
     };
+    if (clientMessageId != null) {
+      payload['clientMessageId'] = clientMessageId;
+    }
     _client?.send(
       destination: '/app/chat.send',
       body: jsonEncode(payload),
