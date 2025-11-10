@@ -40,23 +40,40 @@ class AuthApiDataSource {
       print(  '[AuthAPI] Resposta do login: $data');
       final token = data['token'];
       final role = data['role'];
-      final userId = data['Id'];
+      final userId = data['Id'] ?? data['id'] ?? data['userId'];
       String? sessionId = _extractSessionId(data);
 
-      if (token == null || role == null || sessionId == null || userId == null) {
+      if (token == null || role == null || userId == null) {
         throw Exception('Token ou Role não recebido do servidor');
       }
       await _secureStorage.saveToken(token);
-      User? user = await getProfile(userId);
-      user?.sessionId = sessionId;
-      user?.role = role;
-      if (user != null) {
-        await _secureStorage.saveUser(user);
-        print('[AuthAPI] Usuário salvo: ${user.toJson()}');
-      }
+      // Constrói usuário mínimo a partir do payload do login
+      User userMin = User(
+        id: int.parse(userId.toString()),
+        name: (data['name'] ?? data['username'] ?? email).toString(),
+        email: (data['email'] ?? email).toString(),
+        sessionId: sessionId,
+        role: role,
+      );
+      // Tenta enriquecer com perfil; se falhar (403/404), segue com userMin
+      try {
+        final detailed = await getProfile(userMin.id);
+        if (detailed != null) {
+          userMin = User(
+            id: detailed.id,
+            name: detailed.name,
+            email: detailed.email,
+            sessionId: sessionId,
+            role: role,
+          );
+        }
+      } catch (_) {}
+
+      await _secureStorage.saveUser(userMin);
+      print('[AuthAPI] Usuário salvo: ${userMin.toJson()}');
       await _secureStorage.saveUserId(userId.toString());
 
-      return user;
+      return userMin;
     }
     catch(e){
       // Normaliza erros do Dio para mensagens curtas e amigáveis
@@ -76,11 +93,17 @@ class AuthApiDataSource {
   }
 
   Future<User?> getProfile(int userId) async {
-    final response = await _baseApiService.get('/users/$userId');
-    if (response.statusCode != 200) {
-      throw Exception('Falha ao carregar perfil: ${response.statusMessage}');
+    Response resp;
+    try {
+      resp = await _baseApiService.get('/api/users/$userId');
+    } on DioException catch (e) {
+      // fallback para caminhos antigos
+      resp = await _baseApiService.get('/users/$userId');
     }
-    final data = response.data is Map<String, dynamic> ? response.data : jsonDecode(response.data);
+    if (resp.statusCode != 200) {
+      throw Exception('Falha ao carregar perfil: ${resp.statusMessage}');
+    }
+    final data = resp.data is Map<String, dynamic> ? resp.data : jsonDecode(resp.data);
     return User.fromJson(data);
   }
 }
