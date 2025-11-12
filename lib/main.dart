@@ -26,6 +26,7 @@ import 'presentation/pages/stock/lot_manager_page.dart';
 import 'presentation/pages/analytics/analytics_dashboard_page.dart';
 import 'presentation/pages/chat/chat_rooms_page.dart';
 import 'presentation/pages/chat/chat_room_page.dart';
+import 'presentation/pages/chat/guest_chat_page.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -178,6 +179,12 @@ class MyApp extends StatelessWidget {
               final roomId = args?['roomId']?.toString() ?? '';
               final roomName = args?['roomName']?.toString() ?? 'Chat';
               builder = (context) => ChatRoomPage(roomId: roomId, roomName: roomName);
+              break;
+            case '/guest_chat':
+              final args = settings.arguments as Map<String, dynamic>?;
+              final roomId = args?['roomId']?.toString();
+              final roomName = args?['roomName']?.toString();
+              builder = (context) => GuestChatPage(roomId: roomId, roomName: roomName);
               break;
             default:
               builder = (context) => const MenuPage();

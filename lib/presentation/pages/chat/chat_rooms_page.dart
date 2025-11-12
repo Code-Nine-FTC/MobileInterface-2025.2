@@ -40,42 +40,210 @@ class _ChatRoomsPageState extends State<ChatRoomsPage> {
     });
   }
 
-  Future<void> _showInviteDialog() async {
-    final controller = TextEditingController();
+  Future<void> _showRegisterGuestDialog() async {
     final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final cpfController = TextEditingController();
+    final ageController = TextEditingController();
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    String? selectedGender;
     bool loading = false;
     String? error;
+
     await showDialog(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(builder: (context, setStateSB) {
-          String? validator(String? v) {
-            final email = (v ?? '').trim();
-            if (email.isEmpty) return 'Informe o e-mail do cliente';
-            if (!email.contains('@') || !email.contains('.')) return 'E-mail inválido';
-            return null;
-          }
           return AlertDialog(
-            title: const Text('Convidar cliente'),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: controller,
-                    decoration: const InputDecoration(
-                      labelText: 'E-mail do cliente',
-                      hintText: 'cliente@exemplo.com',
+            title: const Text('Cadastrar cliente'),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                          // Nome
+                          TextFormField(
+                            controller: nameController,
+                            decoration: InputDecoration(
+                              labelText: 'Nome completo',
+                              prefixIcon: const Icon(Icons.person_outline),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Informe o nome completo';
+                              }
+                              if (value.trim().length < 3) {
+                                return 'Nome deve ter no mínimo 3 caracteres';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+
+                          // CPF
+                          TextFormField(
+                            controller: cpfController,
+                            decoration: InputDecoration(
+                              labelText: 'CPF',
+                              hintText: '000.000.000-00',
+                              prefixIcon: const Icon(Icons.badge_outlined),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Informe o CPF';
+                              }
+                              final cpf = value.replaceAll(RegExp(r'[^0-9]'), '');
+                              if (cpf.length != 11) {
+                                return 'CPF deve ter 11 dígitos';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Idade e Sexo
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: TextFormField(
+                                  controller: ageController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Idade',
+                                    prefixIcon: const Icon(Icons.cake_outlined),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Informe';
+                                    }
+                                    final age = int.tryParse(value);
+                                    if (age == null || age < 1 || age > 120) {
+                                      return 'Inválida';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 3,
+                                child: DropdownButtonFormField<String>(
+                                  value: selectedGender,
+                                  decoration: InputDecoration(
+                                    labelText: 'Sexo',
+                                    prefixIcon: const Icon(Icons.wc_outlined),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(value: 'M', child: Text('Masculino')),
+                                    DropdownMenuItem(value: 'F', child: Text('Feminino')),
+                                    DropdownMenuItem(value: 'O', child: Text('Outro')),
+                                  ],
+                                  onChanged: (value) {
+                                    setStateSB(() {
+                                      selectedGender = value;
+                                    });
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Selecione';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // E-mail
+                          TextFormField(
+                            controller: emailController,
+                            decoration: InputDecoration(
+                              labelText: 'E-mail',
+                              hintText: 'cliente@exemplo.com',
+                              prefixIcon: const Icon(Icons.email_outlined),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Informe o e-mail';
+                              }
+                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                return 'E-mail inválido';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Senha
+                          TextFormField(
+                            controller: passwordController,
+                            decoration: InputDecoration(
+                              labelText: 'Senha',
+                              hintText: 'Mínimo 6 caracteres',
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            obscureText: true,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Informe a senha';
+                              }
+                              if (value.length < 6) {
+                                return 'Mínimo 6 caracteres';
+                              }
+                              return null;
+                            },
+                          ),
+                          ],
+                        ),
+                      ),
                     ),
-                    validator: validator,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  if (error != null) ...[
-                    const SizedBox(height: 8),
-                    Text(error!, style: const TextStyle(color: Colors.red)),
-                  ]
-                ],
+                    if (error != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.shade200),
+                        ),
+                        child: Text(
+                          error!,
+                          style: const TextStyle(color: Colors.red, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -88,13 +256,23 @@ class _ChatRoomsPageState extends State<ChatRoomsPage> {
                     ? null
                     : () async {
                         if (!(formKey.currentState?.validate() ?? false)) return;
-                        setStateSB(() { loading = true; error = null; });
+                        setStateSB(() {
+                          loading = true;
+                          error = null;
+                        });
                         try {
-                          final room = await _api.inviteGuestByEmail(controller.text.trim());
+                          final room = await _api.registerGuest(
+                            name: nameController.text.trim(),
+                            cpf: cpfController.text.replaceAll(RegExp(r'[^0-9]'), ''),
+                            age: int.parse(ageController.text.trim()),
+                            gender: selectedGender!,
+                            email: emailController.text.trim(),
+                            password: passwordController.text,
+                          );
                           if (context.mounted) {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Convite enviado. Sala: ${room.name}')),
+                              SnackBar(content: Text('Cliente cadastrado! Sala: ${room.name}')),
                             );
                             _load();
                           }
@@ -107,7 +285,7 @@ class _ChatRoomsPageState extends State<ChatRoomsPage> {
                       },
                 child: loading
                     ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Enviar convite'),
+                    : const Text('Cadastrar'),
               ),
             ],
           );
@@ -138,8 +316,8 @@ class _ChatRoomsPageState extends State<ChatRoomsPage> {
         if (_canInvite)
           IconButton(
             icon: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white),
-            tooltip: 'Convidar cliente',
-            onPressed: _showInviteDialog,
+            tooltip: 'Cadastrar cliente',
+            onPressed: _showRegisterGuestDialog,
           ),
       ],
       child: RefreshIndicator(

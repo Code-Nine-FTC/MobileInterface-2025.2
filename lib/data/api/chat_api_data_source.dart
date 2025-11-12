@@ -54,20 +54,35 @@ class ChatApiDataSource {
     return ChatRoom.fromJson(resp.data);
   }
 
-  // Convida um cliente por e-mail e cria/retorna a sala correspondente
-  Future<ChatRoom> inviteGuestByEmail(String email) async {
+  // Registra um novo usuário guest com acesso limitado ao chat
+  Future<ChatRoom> registerGuest({
+    required String name,
+    required String cpf,
+    required int age,
+    required String gender,
+    required String email,
+    required String password,
+  }) async {
     try {
-      // Backend espera 'guestEmail' (conforme logs/DTO). Enviamos no campo correto.
-      final Response resp = await _api.post('/api/chat/invite', data: {
-        'guestEmail': email,
+      final Response resp = await _api.post('/api/chat/register-guest', data: {
+        'name': name,
+        'cpf': cpf,
+        'age': age,
+        'gender': gender,
+        'email': email,
+        'password': password,
       });
       return ChatRoom.fromJson(resp.data);
     } on DioException catch (e) {
       if (e.response?.statusCode == 400) {
-        throw Exception('E-mail inválido ou já convidado.');
+        final message = e.response?.data?['message'] ?? 'Dados inválidos ou usuário já cadastrado.';
+        throw Exception(message);
       }
       if (e.response?.statusCode == 403) {
         throw Exception('Acesso negado: verifique suas permissões.');
+      }
+      if (e.response?.statusCode == 409) {
+        throw Exception('Usuário com este e-mail ou CPF já existe.');
       }
       rethrow;
     }
