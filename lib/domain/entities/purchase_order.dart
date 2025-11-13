@@ -1,7 +1,9 @@
 class PurchaseOrder {
   final int id;
+  final String? issuingBody; // órgão emissor
+  final String? commitmentNoteNumber; // número da NE (Nota de Empenho)
   final int? year;
-  final String? orderNumber; // número da NE
+  final String? processNumber; // número do processo
   final int? orderId; // referência ao pedido, se houver
   final int? supplierCompanyId;
   final String? supplierCompanyTitle;
@@ -16,8 +18,10 @@ class PurchaseOrder {
 
   PurchaseOrder({
     required this.id,
+    this.issuingBody,
+    this.commitmentNoteNumber,
     this.year,
-    this.orderNumber,
+    this.processNumber,
     this.orderId,
     this.supplierCompanyId,
     this.supplierCompanyTitle,
@@ -56,11 +60,13 @@ class PurchaseOrder {
 
     return PurchaseOrder(
       id: parseInt(json['id'] ?? json['purchaseOrderId'] ?? json['poId']),
+      issuingBody: json['issuingBody']?.toString(),
+      commitmentNoteNumber: json['commitmentNoteNumber']?.toString(),
       year: json['year'] != null ? parseInt(json['year']) : null,
-      orderNumber: json['orderNumber']?.toString() ?? json['numero']?.toString(),
+      processNumber: json['processNumber']?.toString(),
       orderId: json['orderId'] != null ? parseInt(json['orderId']) : null,
       supplierCompanyId: json['supplierCompanyId'] != null ? parseInt(json['supplierCompanyId']) : null,
-      supplierCompanyTitle: (json['supplierCompanyTitle'] ?? json['supplierTitle'] ?? json['supplier']?['title'])?.toString(),
+      supplierCompanyTitle: (json['supplierCompanyTitle'] ?? json['supplierCompanyName'] ?? json['supplierTitle'] ?? json['supplier']?['title'])?.toString(),
       totalValue: parseDouble(json['totalValue'] ?? json['total']),
       issueDate: parseDate(json['issueDate'] ?? json['emissionDate'] ?? json['issue_date']),
       status: json['status']?.toString() ?? json['situacao']?.toString() ?? '',
