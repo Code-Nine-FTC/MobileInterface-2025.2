@@ -18,14 +18,28 @@ class UserInfo {
   });
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {
+    // O backend pode retornar em dois formatos:
+    // Formato 1 (aninhado): { userType: "USER", user: { id, name, email, role } }
+    // Formato 2 (plano): { id, name, email, userType, role, chatRoomId }
+    
+    final userType = json['userType'] ?? 'USER';
+    
+    // Se tem campo 'user' aninhado, extrair dele
+    final userData = json['user'] ?? json;
+    
+    int? id;
+    if (userData['id'] != null) {
+      id = userData['id'] is int ? userData['id'] : int.parse(userData['id'].toString());
+    }
+    
     return UserInfo(
-      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      userType: json['userType'] ?? 'USER',
-      chatRoomId: json['chatRoomId']?.toString(),
-      role: json['role']?.toString(),
-      sessionId: json['sessionId']?.toString(),
+      id: id ?? 0,
+      name: userData['name']?.toString() ?? '',
+      email: userData['email']?.toString() ?? '',
+      userType: userType,
+      chatRoomId: json['chatRoomId']?.toString() ?? userData['chatRoomId']?.toString(),
+      role: userData['role']?.toString(),
+      sessionId: userData['sessionId']?.toString(),
     );
   }
 

@@ -36,8 +36,21 @@ class _ChatRoomsPageState extends State<ChatRoomsPage> {
 
   void _load() {
     setState(() {
-      _future = _onlyActive ? _api.getActiveRooms() : _api.getAllRooms();
+      _future = _loadWithErrorHandling();
     });
+  }
+
+  Future<List<ChatRoom>> _loadWithErrorHandling() async {
+    try {
+      return _onlyActive ? await _api.getActiveRooms() : await _api.getAllRooms();
+    } catch (e) {
+      print('[ChatRooms] Erro ao carregar: $e');
+      // Se for erro 403, pode ser problema de permissão no backend
+      if (e.toString().contains('403')) {
+        throw Exception('Sem permissão para acessar chats.\nVerifique as configurações no backend.');
+      }
+      rethrow;
+    }
   }
 
   Future<void> _showRegisterGuestDialog() async {

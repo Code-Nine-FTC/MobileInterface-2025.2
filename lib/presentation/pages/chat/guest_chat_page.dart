@@ -37,6 +37,7 @@ class _GuestChatPageState extends State<GuestChatPage> {
   String? _actualRoomId;
   String? _actualRoomName;
   StreamSubscription<ChatMessage>? _messageSub;
+  bool _socketConnected = false;
 
   @override
   void initState() {
@@ -106,10 +107,25 @@ class _GuestChatPageState extends State<GuestChatPage> {
 
   Future<void> _connectSocket() async {
     try {
+      print('[GuestChat] Tentando conectar ao socket...');
       await _socket.connect();
+      print('[GuestChat] Socket conectado! Subscrevendo ao room: $_actualRoomId');
+      
+      setState(() {
+        _socketConnected = true;
+      });
+      
       _messageSub = _socket.subscribeRoomMessages(_actualRoomId!).listen((msg) {
+        print('[GuestChat] Nova mensagem recebida via socket: ${msg.content}');
         if (msg.roomId == _actualRoomId) {
           setState(() {
+            // Remove mensagem otimista se existir
+            _messages.removeWhere((m) => 
+              m.senderId == _currentUserId && 
+              m.content == msg.content &&
+              m.id.startsWith('temp_')
+            );
+            // Adiciona mensagem real
             _messages.add(msg);
           });
           _scrollToBottom();
@@ -118,8 +134,12 @@ class _GuestChatPageState extends State<GuestChatPage> {
           }
         }
       });
+      print('[GuestChat] Subscrição ao room configurada');
     } catch (e) {
-      print('[GuestChat] Erro ao conectar socket: $e');
+      print('[GuestChat] ERRO ao conectar socket: $e');
+      setState(() {
+        _socketConnected = false;
+      });
     }
   }
 
@@ -137,17 +157,49 @@ class _GuestChatPageState extends State<GuestChatPage> {
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty || _actualRoomId == null) return;
+    if (text.isEmpty || _actualRoomId == null) {
+      print('[GuestChat] Mensagem vazia ou roomId null');
+      return;
+    }
 
+    print('[GuestChat] Enviando mensagem - RoomId: $_actualRoomId, Texto: $text');
+    
+    // Limpa o campo imediatamente para feedback visual
     _messageController.clear();
+    
+    // Adiciona mensagem otimista na UI
+    final optimisticMessage = ChatMessage(
+      id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+      roomId: _actualRoomId!,
+      senderId: _currentUserId ?? 'me',
+      senderName: _currentUserName ?? 'Você',
+      content: text,
+      timestamp: DateTime.now(),
+      read: true,
+    );
+    
+    setState(() {
+      _messages.add(optimisticMessage);
+    });
+    _scrollToBottom();
     
     try {
       _socket.sendMessage(roomId: _actualRoomId!, content: text);
-      _scrollToBottom();
+      print('[GuestChat] Mensagem enviada via socket');
     } catch (e) {
+      print('[GuestChat] ERRO ao enviar mensagem: $e');
+      
+      // Remove mensagem otimista em caso de erro
+      setState(() {
+        _messages.removeWhere((m) => m.id == optimisticMessage.id);
+      });
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao enviar: $e')),
+          SnackBar(
+            content: Text('Erro ao enviar: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -192,7 +244,20 @@ class _GuestChatPageState extends State<GuestChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_actualRoomName ?? 'Chat'),
+        title: Row(
+          children: [
+            Text(_actualRoomName ?? 'Chat'),
+            const SizedBox(width: 8),
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: _socketConnected ? Colors.green : Colors.red,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+        ),
         backgroundColor: AppColors.primaryLight,
         foregroundColor: Colors.white,
         elevation: 0,
