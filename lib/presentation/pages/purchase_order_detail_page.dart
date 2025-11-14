@@ -74,7 +74,7 @@ class _PurchaseOrderDetailPageState extends State<PurchaseOrderDetailPage> {
       backgroundColor: Colors.transparent,
       bottomNavigationBar: CustomNavbar(currentIndex: _selectedIndex, onTap: (i) { setState(() => _selectedIndex = i); }),
       body: StandardScreen(
-        title: _po != null ? (_po!.orderNumber != null && _po!.orderNumber!.isNotEmpty ? 'NE ${_po!.orderNumber}' : 'NE #${_po!.id}') : 'Detalhes da Ordem',
+        title: _po != null ? 'OC #${_po!.id}' : 'Detalhes da Ordem',
         child: _isLoading ? const Center(child: CircularProgressIndicator()) : _error != null ? _buildError() : _buildContent(),
       ),
     );
@@ -110,7 +110,13 @@ class _PurchaseOrderDetailPageState extends State<PurchaseOrderDetailPage> {
                 children: [
                   Text('Informações básicas', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  ListTile(title: const Text('Número (NE)'), subtitle: Text(po.orderNumber ?? '—')),
+                  ListTile(
+                    title: const Text('Número da Ordem de Compra (OC)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    subtitle: Text('#${po.id}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.infoLight)),
+                  ),
+                  if (po.commitmentNoteNumber != null) ListTile(title: const Text('Nota de Empenho (NE)'), subtitle: Text(po.commitmentNoteNumber!)),
+                  if (po.issuingBody != null) ListTile(title: const Text('Órgão Emissor'), subtitle: Text(po.issuingBody!)),
+                  if (po.processNumber != null) ListTile(title: const Text('Número do Processo'), subtitle: Text(po.processNumber!)),
                   ListTile(title: const Text('Fornecedor'), subtitle: Text(po.supplierCompanyTitle ?? '—')),
                   ListTile(title: const Text('Valor total'), subtitle: Text(po.totalValue != null ? 'R\$ ${po.totalValue!.toStringAsFixed(2)}' : '—')),
                   ListTile(title: const Text('Data de emissão'), subtitle: Text(_formatDate(po.issueDate))),
