@@ -62,7 +62,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   Future<void> _initSocket() async {
     await _socket.connect();
     _subMsg = _socket.subscribeRoomMessages(widget.roomId).listen((m) {
-      final isMine = _myUserId != null && m.senderId == _myUserId;
+      final isMine = m.isFromCurrentUser;
       if (isMine && m.clientMessageId != null && _pendingByClientId.containsKey(m.clientMessageId!)) {
         // Eco do servidor para uma mensagem otimista: substitui a versão local
         final idx = _pendingByClientId.remove(m.clientMessageId!)!;
@@ -113,6 +113,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       timestamp: DateTime.now(),
       read: true,
       clientMessageId: clientMessageId,
+      isFromCurrentUser: true, // Mensagem otimista sempre é do usuário atual
     );
     setState(() {
       _messages.add(optimistic);
@@ -147,7 +148,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       itemCount: _messages.length,
       itemBuilder: (context, index) {
         final m = _messages[index];
-        final isMine = _myUserId != null && m.senderId == _myUserId;
+        final isMine = m.isFromCurrentUser;
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           child: Row(

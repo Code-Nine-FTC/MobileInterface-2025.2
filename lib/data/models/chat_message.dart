@@ -7,6 +7,7 @@ class ChatMessage {
   final DateTime timestamp;
   final bool read;
   final String? clientMessageId; // identificador gerado pelo cliente para dedupe
+  final bool isFromCurrentUser; // campo do backend que identifica se é do usuário atual
 
   ChatMessage({
     required this.id,
@@ -17,6 +18,7 @@ class ChatMessage {
     required this.timestamp,
     required this.read,
     this.clientMessageId,
+    required this.isFromCurrentUser,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,9 @@ class ChatMessage {
     // Flag de leitura alternativa
     final isRead = json['read'] == true || json['seen'] == true || json['status']?.toString() == 'READ';
 
+    // Flag do backend que identifica se é do usuário atual
+    final isFromCurrentUser = json['isFromCurrentUser'] == true || json['fromCurrentUser'] == true;
+
     return ChatMessage(
       id: json['id'].toString(),
       // compat: aceita 'chatRoomId', 'roomId' ou 'room'
@@ -57,6 +62,7 @@ class ChatMessage {
       timestamp: ts,
       read: isRead,
       clientMessageId: json['clientMessageId']?.toString(),
+      isFromCurrentUser: isFromCurrentUser,
     );
   }
 }

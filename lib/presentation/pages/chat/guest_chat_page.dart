@@ -121,7 +121,7 @@ class _GuestChatPageState extends State<GuestChatPage> {
           setState(() {
             // Remove mensagem otimista se existir
             _messages.removeWhere((m) => 
-              m.senderId == _currentUserId && 
+              m.isFromCurrentUser && 
               m.content == msg.content &&
               m.id.startsWith('temp_')
             );
@@ -129,7 +129,7 @@ class _GuestChatPageState extends State<GuestChatPage> {
             _messages.add(msg);
           });
           _scrollToBottom();
-          if (msg.senderId != _currentUserId) {
+          if (!msg.isFromCurrentUser) {
             _api.markMessagesRead(_actualRoomId!);
           }
         }
@@ -176,6 +176,7 @@ class _GuestChatPageState extends State<GuestChatPage> {
       content: text,
       timestamp: DateTime.now(),
       read: true,
+      isFromCurrentUser: true, // Mensagem otimista sempre é do usuário atual
     );
     
     setState(() {
@@ -378,7 +379,7 @@ class _GuestChatPageState extends State<GuestChatPage> {
   }
 
   Widget _buildMessage(ChatMessage msg) {
-    final isMe = msg.senderId == _currentUserId;
+    final isMe = msg.isFromCurrentUser;
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(

@@ -33,6 +33,7 @@ class ChatRoom {
         content: json['lastMessageContent'].toString(),
         timestamp: DateTime.tryParse(json['lastMessageTimestamp']?.toString() ?? '') ?? DateTime.now(),
         read: true,
+        isFromCurrentUser: false, // preview sem contexto
       );
     } else if (json['latestMessage'] != null) {
       // Alternativa: alguns backends usam 'latestMessage'
@@ -48,6 +49,7 @@ class ChatRoom {
           content: lm,
           timestamp: DateTime.now(),
           read: true,
+          isFromCurrentUser: false, // preview sem contexto
         );
       }
     } else if (json['lastMessageText'] != null) {
@@ -59,6 +61,7 @@ class ChatRoom {
         content: json['lastMessageText'].toString(),
         timestamp: DateTime.tryParse(json['lastMessageDate']?.toString() ?? '') ?? DateTime.now(),
         read: true,
+        isFromCurrentUser: false, // preview sem contexto
       );
     }
     return ChatRoom(
