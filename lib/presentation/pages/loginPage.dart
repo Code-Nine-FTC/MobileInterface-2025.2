@@ -94,16 +94,54 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
       if (!mounted) return;
 
-      switch (userData?.role) {
-        case 'ADMIN':
-          Navigator.pushReplacementNamed(context, '/admin_menu');
-          break;
-        case 'MANAGER':
-          Navigator.pushReplacementNamed(context, '/menu');
-          break;
-        case 'ASSISTANT':
-          Navigator.pushReplacementNamed(context, '/menu');
-          break;
+      // Após login bem-sucedido, verificar o tipo de usuário
+      try {
+        final userInfo = await api.getUserInfo();
+        
+        if (!mounted) return;
+
+        if (userInfo.isGuest) {
+          // Guest: redirecionar para página específica de chat
+          Navigator.pushReplacementNamed(
+            context, 
+            '/guest_chat',
+            arguments: {
+              'roomId': userInfo.chatRoomId,
+              'roomName': 'Chat',
+            },
+          );
+        } else {
+          // USER: redirecionar conforme role
+          switch (userInfo.role) {
+            case 'ADMIN':
+              Navigator.pushReplacementNamed(context, '/admin_menu');
+              break;
+            case 'MANAGER':
+              Navigator.pushReplacementNamed(context, '/menu');
+              break;
+            case 'ASSISTANT':
+              Navigator.pushReplacementNamed(context, '/menu');
+              break;
+            default:
+              Navigator.pushReplacementNamed(context, '/menu');
+          }
+        }
+      } catch (e) {
+        print('[LoginPage] Erro ao obter UserInfo, usando fallback: $e');
+        // Fallback: usar o método antigo baseado apenas em role
+        switch (userData?.role) {
+          case 'ADMIN':
+            Navigator.pushReplacementNamed(context, '/admin_menu');
+            break;
+          case 'MANAGER':
+            Navigator.pushReplacementNamed(context, '/menu');
+            break;
+          case 'ASSISTANT':
+            Navigator.pushReplacementNamed(context, '/menu');
+            break;
+          default:
+            Navigator.pushReplacementNamed(context, '/menu');
+        }
       }
     } catch (e) {
       // Exibe uma mensagem simples e amigável ao errar o login
