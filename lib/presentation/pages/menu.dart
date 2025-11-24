@@ -14,6 +14,7 @@ class MenuPage extends StatefulWidget {
 class _MenuPageState extends State<MenuPage> {
   int _selectedIndex = 0;
   bool _isPharmacyUser = false;
+  bool _isAdmin = false;
   bool _isLoading = true;
 
   @override
@@ -29,6 +30,7 @@ class _MenuPageState extends State<MenuPage> {
     setState(() {
       // sessionId armazena o ID da seção do usuário
       _isPharmacyUser = user?.sessionId == '2';
+      _isAdmin = (user?.role == 'ADMIN');
       _isLoading = false;
     });
   }
@@ -168,6 +170,15 @@ class _MenuPageState extends State<MenuPage> {
                   color: Colors.indigo,
                   onTap: () => Navigator.pushNamed(context, '/purchase_orders'),
                 ),
+                // Chat visível para usuários da Farmácia (sessão 2) ou Administradores
+                if (_isPharmacyUser || _isAdmin)
+                  _buildModernCard(
+                    icon: Icons.chat_bubble_rounded,
+                    label: 'Chat',
+                    description: 'Converse em tempo real',
+                    color: Colors.teal,
+                    onTap: () => Navigator.pushNamed(context, '/chat'),
+                  ),
                 // Mostra o card de Validade apenas para usuários da seção 2 (Farmácia)
                 if (_isPharmacyUser)
                   _buildModernCard(

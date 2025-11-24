@@ -39,8 +39,7 @@ class _PurchaseOrderListPageState extends State<PurchaseOrderListPage> {
   }
 
   String _displayTitle(PurchaseOrder po) {
-    if (po.orderNumber != null && po.orderNumber!.isNotEmpty) return 'NE ${po.orderNumber}';
-    return 'NE #${po.id}';
+    return 'OC #${po.id}';
   }
 
   Color _statusColor(String status) {

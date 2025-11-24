@@ -4,6 +4,8 @@ import '../../components/navBar.dart';
 import '../../components/standartScreen.dart';
 import '../../../data/api/order_api_data_source.dart';
 import '../../../domain/entities/order.dart';
+import '../../../core/utils/secure_storage_service.dart';
+import '../../../domain/entities/user.dart';
 
 // Centralização dos status
 class OrderStatusInfo {
@@ -21,7 +23,6 @@ const Map<String, OrderStatusInfo> kOrderStatusMap = {
   'cancelled': OrderStatusInfo(english: 'cancelled', portuguese: 'Cancelado', color: Colors.red),
   'canceled': OrderStatusInfo(english: 'canceled', portuguese: 'Cancelado', color: Colors.red),
   'in_progress': OrderStatusInfo(english: 'in_progress', portuguese: 'Em andamento', color: Colors.amber),
-  // aliases in pt-BR
   'pendente': OrderStatusInfo(english: 'pending', portuguese: 'Pendente', color: Colors.orange),
   'processando': OrderStatusInfo(english: 'processing', portuguese: 'Processando', color: Colors.blue),
   'aprovado': OrderStatusInfo(english: 'approved', portuguese: 'Aprovado', color: Colors.teal),
@@ -38,8 +39,40 @@ class OrderManagementPage extends StatefulWidget {
 }
 
 class _OrderManagementPageState extends State<OrderManagementPage> {
+
+  User? _loggedUser;
+  final SecureStorageService _secureStorage = SecureStorageService();
+
+  bool get isAdmin => _loggedUser?.role?.toUpperCase() == 'ADMIN';
+
+  String? get loggedSectionTitle {
+    // Seção do usuário logado, se existir
+    if (_loggedUser?.sessionId != null && _loggedUser?.role?.toUpperCase() != 'ADMIN') {
+      if (_allOrders.isNotEmpty) {
+        final order = _allOrders.firstWhere(
+          (o) => o.consumerSectionId?.toString() == _loggedUser!.sessionId,
+          orElse: () => _allOrders.first,
+        );
+        return order.consumerSectionTitle;
+      }
+    }
+    // Fallback antigo
+    if (_allOrders.isNotEmpty && _allOrders.first.consumerSectionTitle != null) {
+      return _allOrders.first.consumerSectionTitle;
+    }
+    return null;
+  }
+
+  int get loggedSectionOrderCount {
+    if (isAdmin) {
+      return _allOrders.length;
+    }
+    final section = loggedSectionTitle;
+    if (section == null) return 0;
+    return _allOrders.where((o) => o.consumerSectionTitle == section).length;
+  }
   int _selectedIndex = 0;
-  String _selectedStatusFilter = 'in_progress'; // Começa em 'Em andamento'
+  String _selectedStatusFilter = 'in_progress';
   final TextEditingController _searchController = TextEditingController();
   List<Order> _allOrders = [];
   List<Order> _filteredOrders = [];
@@ -50,7 +83,15 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _loadLoggedUser();
     _fetchOrders();
+  }
+
+  Future<void> _loadLoggedUser() async {
+    final user = await _secureStorage.getUser();
+    setState(() {
+      _loggedUser = user;
+    });
   }
 
   @override
@@ -209,17 +250,15 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
               ),
               child: Column(
                 children: [
-                  // Primeira linha: Campo de busca e contador
+                  // Primeira linha: Campo de busca, contador geral e contador da seção logada
                   Row(
                     children: [
-                      // Ícone de filtro
                       Icon(
                         Icons.filter_list,
                         color: AppColors.infoLight,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
-                      
                       // Campo de pesquisa
                       Expanded(
                         child: Container(
@@ -266,10 +305,7 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                           ),
                         ),
                       ),
-                      
                       const SizedBox(width: 12),
-                      
-                      // Botão refresh
                       GestureDetector(
                         onTap: _fetchOrders,
                         child: Container(
@@ -285,10 +321,8 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                           ),
                         ),
                       ),
-                      
                       const SizedBox(width: 8),
-                      
-                      // Contador de resultados
+                      // Contador de resultados geral
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
@@ -315,6 +349,44 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
                           ],
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      // Contador da seção logada ou admin
+                      if (isAdmin || loggedSectionTitle != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isAdmin ? Icons.admin_panel_settings_outlined : Icons.account_tree_outlined,
+                                color: Colors.blue,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${loggedSectionOrderCount}',
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isAdmin ? 'Todos' : loggedSectionTitle!,
+                                style: const TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                   

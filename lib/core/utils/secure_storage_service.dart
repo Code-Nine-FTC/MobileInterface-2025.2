@@ -22,6 +22,14 @@ class SecureStorageService {
     await _storage.write(key: 'user', value: jsonEncode(user.toJson()));
   }
 
+  Future<void> saveChatRoomId(String chatRoomId) async {
+    await _storage.write(key: 'chat_room_id', value: chatRoomId);
+  }
+
+  Future<String?> getChatRoomId() async {
+    return await _storage.read(key: 'chat_room_id');
+  }
+
   Future<User?> getUser() async {
     final userData = await _storage.read(key: 'user');
     if (userData == null) return null;
