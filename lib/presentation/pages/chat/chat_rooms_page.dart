@@ -167,7 +167,10 @@ class _ChatRoomsPageState extends State<ChatRoomsPage> {
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                                   ),
+                                  isExpanded: true,
+                                  isDense: true,
                                   items: const [
                                     DropdownMenuItem(value: 'M', child: Text('Masculino')),
                                     DropdownMenuItem(value: 'F', child: Text('Feminino')),
